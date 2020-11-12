@@ -1,0 +1,107 @@
+import torch
+import torch.nn as nn
+import pytorch_pretrained_bert as Bert
+import numpy as np
+import copy
+import math
+import sys
+from models.parts.attention import BertSelfAttention
+
+
+class BertEncoder(nn.Module):
+    def __init__(self, params, num_layer):
+        super(BertEncoder, self).__init__()
+        layer = BertLayer(params)
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(num_layer)])
+
+    def forward(self, hidden_states, attention_mask, encounter):
+        for layer_module in self.layer:
+            hidden_states = layer_module(hidden_states, attention_mask, encounter)
+        return hidden_states
+
+
+class BertLayer(nn.Module):
+    def __init__(self, params):
+        super(BertLayer, self).__init__()
+        self.attention = BertAttention(params)
+        self.intermediate = BertIntermediate(params)
+        self.output = BertOutput(params)
+
+    def forward(self, hidden_states, attention_mask, encounter):
+        attention_output = self.attention(hidden_states, attention_mask, encounter)
+        intermediate_output = self.intermediate(attention_output)
+        layer_output = self.output(intermediate_output, attention_output)
+        return layer_output
+
+
+class BertSelfOutput(nn.Module):
+    def __init__(self, params):
+        super(BertSelfOutput, self).__init__()
+        self.dense = nn.Linear(params['hidden_size'], params['hidden_size'])
+        self.LayerNorm = Bert.modeling.BertLayerNorm(params['hidden_size'], eps=1e-12)
+        self.dropout = nn.Dropout(params['hidden_dropout_prob'])
+
+    def forward(self, hidden_states, input_tensor):
+        hidden_states = self.dense(hidden_states)
+        hidden_states = self.dropout(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+        return hidden_states
+
+
+class BertAttention(nn.Module):
+    def __init__(self, params):
+        super(BertAttention, self).__init__()
+        self.self = BertSelfAttention(params)
+        self.output = BertSelfOutput(params)
+
+    def forward(self, input_tensor, attention_mask, encounter):
+        self_output = self.self(input_tensor, attention_mask, encounter)
+        attention_output = self.output(self_output, input_tensor)
+        return attention_output
+
+
+class BertIntermediate(nn.Module):
+    def __init__(self, params):
+        super(BertIntermediate, self).__init__()
+        self.dense = nn.Linear(params['hidden_size'], params['intermediate_size'])
+        if isinstance(params['hidden_act'], str) or (sys.version_info[0] == 2 and isinstance(params['hidden_act'], unicode)):
+            self.intermediate_act_fn = Bert.modeling.ACT2FN[params['hidden_act']]
+        else:
+            self.intermediate_act_fn = params['hidden_act']
+
+    def forward(self, hidden_states):
+        hidden_states = self.dense(hidden_states)
+        hidden_states = self.intermediate_act_fn(hidden_states)
+        return hidden_states
+
+
+class BertOutput(nn.Module):
+    def __init__(self, params):
+        super(BertOutput, self).__init__()
+        self.dense = nn.Linear(params['intermediate_size'], params['hidden_size'])
+        self.LayerNorm = Bert.modeling.BertLayerNorm(params['hidden_size'], eps=1e-12)
+        self.dropout = nn.Dropout(params['hidden_dropout_prob'])
+
+    def forward(self, hidden_states, input_tensor):
+        hidden_states = self.dense(hidden_states)
+        hidden_states = self.dropout(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+        return hidden_states
+
+
+class BertPooler(nn.Module):
+    def __init__(self, params):
+        super(BertPooler, self).__init__()
+        self.dense = nn.Linear(params['hidden_size'], params['hidden_size'])
+        self.activation = nn.Tanh()
+
+    def forward(self, hidden_states, encounter):
+        # We "pool" the model by simply taking the hidden state corresponding
+        # to the first token.
+        if encounter is False:
+            first_token_tensor = hidden_states[:, 0]
+        else:
+            first_token_tensor = hidden_states[:, :, 0]
+        pooled_output = self.dense(first_token_tensor)
+        pooled_output = self.activation(pooled_output)
+        return pooled_output

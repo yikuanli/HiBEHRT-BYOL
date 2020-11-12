@@ -1,0 +1,32 @@
+raw_file_path:
+  patient: /home/workspace/datasets/cprd/cuts/02_cprd2015/1_RawData/Patient
+  clinical: /home/workspace/datasets/cprd/cuts/02_cprd2015/1_RawData/Clinical
+  practice: /home/workspace/datasets/cprd/cuts/02_cprd2015/1_RawData/Practice
+  diagnosis_hes: /home/workspace/datasets/cprd/cuts/02_cprd2015/2_LinkageFiles/hes_diagnosis_hosp_16_049R.txt
+  hes_death: /home/workspace/datasets/cprd/cuts/02_cprd2015/2_LinkageFiles/death_patient_16_049R.txt
+  eligible: /home/workspace/datasets/cprd/cuts/02_cprd2015/2_LinkageFiles/LinkagesSet12/linkage_eligibility.txt
+  med2read: /home/workspace/datasets/cprd/cuts/02_cprd2015/3_Lookups/DiseaseCodes/medical.txt
+  icdNHS:  /home/workspace/datasets/cprd/cuts/02_cprd2015/3_Lookups/final_mapping.csv
+  hes_procedure: /home/workspace/datasets/cprd/cuts/02_cprd2015/2_LinkageFiles/hes_procedures_epi_16_049R.txt
+  prod2bnf: /home/workspace/datasets/cprd/cuts/02_cprd2015/3_Lookups/ProductCodes/product.txt
+  therapy: /home/workspace/datasets/cprd/cuts/02_cprd2015/1_RawData/Therapy
+  test: /home/workspace/datasets/cprd/cuts/02_cprd2015/1_RawData/Test
+  additional: /home/workspace/datasets/cprd/cuts/02_cprd2015/1_RawData/Additional
+
+mid_stage_file_path:
+  mid_stage_dir: /home/shared/yikuan/HiBEHRT/data
+  mapped_diagnosis: diagnoses.parquet
+  medication: medication.parquet
+  hes_procedure: hes_procedure.parquet
+  cprd_test: cprd_test.parquet
+  additional: additional.parquet
+  hf_data: HF_2005_2015.parquet
+  bmi: bmi.parquet
+  bp_low: bp_low.parquet
+  bp_high: bp_high.parquet
+  smoke: smoke.parquet
+  alcohol: alcohol.parquet
+  downstream: pat_downstrean.parquet
+
+
+task: generate_pat_list.main

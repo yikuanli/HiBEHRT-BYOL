@@ -1,0 +1,44 @@
+env_params:
+  gpus: 1
+  accumulate_grad_batches: 4
+  max_epochs: 50
+  log_every_n_steps: 2
+callback_params:
+  monitor: train_loss
+  mode: min
+  save_top_k: 3
+base_params:
+  dataloader: EHR2VecDataLoader
+  dataloader_params:
+    token_dict_path: /home/shared/yikuan/HiBEHRT/data/dict4all
+    age_dict_path: /home/shared/yikuan/HiBEHRT/data/dict4age
+    max_seq_length: 3000
+    segment_length: 100
+    move_length: 50
+  model: EHR2Vec
+  model_params:
+    vocab_size: 2846
+    seg_vocab_size: 2
+    age_vocab_size: 112
+    max_position_length: 3000
+    hidden_size: 256
+    hidden_dropout_prob: 0.1
+    attention_probs_dropout_prob: 0.1
+    num_attention_heads: 4
+    intermediate_size: 1024
+    hidden_act: gelu
+    extractor_num_layer: 4
+    aggregator_num_layer: 4
+    optimiser: Adam
+    optimiser_params: {'lr': 0.00005, 'weight_decay': 0.0000015}
+    scheduler: {warmup_epochs: 2, max_epochs: 50, warmup_start_lr: 0.000001, eta_min: 0.00001}
+train_params:
+  data_path: /home/shared/yikuan/HiBEHRT/data/HF/1985_2005/train.parquet
+  batch_size: 4
+  shuffle: true
+  num_workers: 1
+eval_params:
+  data_path: /home/shared/yikuan/HiBEHRT/data/HF/1985_2005/tune.parquet
+  batch_size: 4
+  shuffle: false
+  num_workers: 1
