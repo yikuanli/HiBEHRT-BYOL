@@ -51,7 +51,7 @@ def EHR2VecDataLoader(params):
     if params['data_path'] is not None:
         data = pd.read_parquet(params['data_path'])
         if 'fraction' in params:
-            data = data.sample(frac=params['fraction'], random_state=params['seed']).reset_index(drop=True)
+            data = data.sample(frac=params['fraction']).reset_index(drop=True)
 
         dset = EHR2VecDset(dataset=data, params=params)
         dataloader = DataLoader(dataset=dset,

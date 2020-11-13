@@ -1,7 +1,7 @@
 env_params:
   gpus: 1
   accumulate_grad_batches: 4
-  max_epochs: 50
+  max_epochs: 20
   log_every_n_steps: 2
 callback_params:
   monitor: train_loss
@@ -30,8 +30,8 @@ base_params:
     extractor_num_layer: 4
     aggregator_num_layer: 4
     optimiser: Adam
-    optimiser_params: {'lr': 0.00005, 'weight_decay': 0.0000015}
-    scheduler: {warmup_epochs: 2, max_epochs: 50, warmup_start_lr: 0.000001, eta_min: 0.00001}
+    optimiser_params: {'lr': 0.00005, 'weight_decay': 0.}
+    scheduler: {warmup_epochs: 1, max_epochs: 20, warmup_start_lr: 0.000001, eta_min: 0.00001}
 train_params:
   data_path: /home/shared/yikuan/HiBEHRT/data/HF/1985_2005/train.parquet
   batch_size: 4
