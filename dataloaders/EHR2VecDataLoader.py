@@ -5,6 +5,26 @@ from torchvision import transforms
 import pandas as pd
 
 
+def weightedSampling(data, classes, split):
+    def make_weights_for_balanced_classes(sampled, nclasses, split):
+        count = sampled.label.value_counts().to_list()
+        weight_per_class = [0.] * nclasses
+        N = float(sum(count))
+        for i in range(nclasses):
+            weight_per_class[i] = N / (float(count[i]))
+        weight = [0] * int(N)
+        weight_per_class[0] = weight_per_class[0] * split
+
+        for idx, val in enumerate(sampled.label):
+            weight[idx] = weight_per_class[int(val)]
+        return weight
+
+    w = make_weights_for_balanced_classes(data, classes, split)
+    w = torch.DoubleTensor(w)
+    sampler = torch.utils.data.sampler.WeightedRandomSampler(w, len(w), replacement=True)
+    return sampler
+
+
 class EHR2VecDset(Dataset):
     def __init__(self, dataset, params):
         # dataframe preproecssing
@@ -54,10 +74,18 @@ def EHR2VecDataLoader(params):
             data = data.sample(frac=params['fraction']).reset_index(drop=True)
 
         dset = EHR2VecDset(dataset=data, params=params)
+
+        sampler = None
+
+        if 'ratio' in params:
+            if params['ratio'] is not None:
+                sampler = weightedSampling(data, 2, params['ratio'])
+
         dataloader = DataLoader(dataset=dset,
                                 batch_size=params['batch_size'],
                                 shuffle=params['shuffle'],
-                                num_workers=params['num_workers']
+                                num_workers=params['num_workers'],
+                                sampler=sampler
                                 )
         return dataloader
     else:

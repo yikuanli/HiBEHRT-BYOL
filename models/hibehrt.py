@@ -15,6 +15,7 @@ from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
 
+
 class EHR2Vec(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
@@ -79,6 +80,16 @@ class EHR2Vec(pl.LightningModule):
         self.valid_prc(self.sig(pred), label)
         self.valid_recall(self.sig(pred), label)
 
+    def test_step(self, batch, batch_idx):
+        loss, pred, label = self.shared_step(batch, batch_idx)
+
+        if self.manual_valid:
+            self.pred_list.append(self.sig(pred).cpu())
+            self.target_list.append(label.cpu())
+
+        self.valid_prc(self.sig(pred), label)
+        self.valid_recall(self.sig(pred), label)
+
     def configure_optimizers(self):
         optimizer = eval(self.params['optimiser'])
         optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
@@ -102,6 +113,18 @@ class EHR2Vec(pl.LightningModule):
             self.log('average_precision', average_precision(pred, target=label))
             self.log('auroc', auroc(pred, label))
             self.reset_buffer_valid()
+
+    def test_epoch_end(self, outs):
+        label = torch.cat(self.target_list, dim=0).view(-1)
+        pred = torch.cat(self.pred_list, dim=0).view(-1)
+
+        PRC = average_precision(pred, target=label)
+        ROC = auroc(pred, label)
+
+        print('average_precision', PRC)
+        print('auroc', ROC)
+
+        return {'auprc': PRC, 'auroc': ROC}
 
 class Extractor(nn.Module):
     def __init__(self, params):

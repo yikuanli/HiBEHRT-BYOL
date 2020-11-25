@@ -4,7 +4,7 @@ env_params:
   max_epochs: 20
   log_every_n_steps: 2
 callback_params:
-  monitor: train_loss
+  monitor: val_loss
   mode: min
   save_top_k: 3
 base_params:
