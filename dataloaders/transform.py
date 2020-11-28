@@ -4,6 +4,36 @@ import math
 import random
 
 
+class RandomCropSequence(object):
+    def __init__(self, p, seq_threshold=50):
+        # p probability (0, 1) of doing random crop
+        self.p = p
+        self.seq_threshold = seq_threshold
+
+    def __call__(self, sample):
+        prob = random.random()
+
+        if prob > self.p:
+            return sample
+        else: # do random crop
+            seq_len = len(sample['code'])
+
+            # if seq length <= threshold length , don't do random crop
+            if seq_len <= self.seq_threshold:
+                return sample
+            else:
+                # else select start point from 0 to length - threshold
+                start = random.randint(0, seq_len-self.seq_threshold)
+                len_choise = random.randint(self.seq_threshold, max(self.seq_threshold, seq_len))
+
+                sample.update({
+                    'code': sample['code'][start:(start+len_choise)],
+                    'age': sample['age'][start:(start+len_choise)],
+                    'seg': sample['seg'][start:(start+len_choise)],
+                    'position': sample['position'][start:(start+len_choise)]})
+                return sample
+
+
 class TruncateSeqence(object):
     def __init__(self, max_seq_length):
         self.max_seq_length = max_seq_length

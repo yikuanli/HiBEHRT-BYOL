@@ -1,6 +1,7 @@
 env_params:
   gpus: 3
-  accumulate_grad_batches: 6
+  accelerator: ddp
+  accumulate_grad_batches: 4
   max_epochs: 1000
   log_every_n_steps: 50
 callback_params:
@@ -8,19 +9,21 @@ callback_params:
   mode: min
   save_top_k: 1
 base_params:
-  dataloader: SSL
+  dataloader: MlmByolDataLoader
   dataloader_params:
-    token_dict_path: /home/shared/yikuan/HiBEHRT/data/dict4all
-    age_dict_path: /home/shared/yikuan/HiBEHRT/data/dict4age
-    max_seq_length: 3000
+    token_dict_path:  /well/rahimi/users/sev854/project/HiBEHRT/data/dict4all
+    age_dict_path:  /well/rahimi/users/sev854/project/HiBEHRT/data/dict4age
+    max_seq_length: 1500
     segment_length: 100
     move_length: 50
-  model: SelfSupervisedLearning
+    p: 0.2
+    seq_threshold: 100
+  model: SSLMLMBYOL
   model_params:
     vocab_size: 2846
     seg_vocab_size: 2
     age_vocab_size: 112
-    max_position_length: 3000
+    max_position_length: 1500
     hidden_size: 256
     hidden_dropout_prob: 0.2
     attention_probs_dropout_prob: 0.2
@@ -33,13 +36,13 @@ base_params:
     moving_average_decay: 0.99
     optimiser: Adam
     optimiser_params: {'lr': 0.0005, 'weight_decay': 0.0000015}
-    scheduler: {warmup_epochs: 10, max_epochs: 1000}
-    random_mask: 0.9
+    scheduler: {warmup_epochs: 1, max_epochs: 1000}
+    random_mask: 0.85
 train_params:
-  data_path: /home/shared/yikuan/HiBEHRT/data/selfsupervise.parquet
-  batch_size: 4
+  data_path:  /well/rahimi/users/sev854/project/HiBEHRT/data/selfsupervise.parquet
+  batch_size: 32
   shuffle: true
-  num_workers: 1
+  num_workers: 3
 eval_params:
   data_path: null
   batch_size: 4

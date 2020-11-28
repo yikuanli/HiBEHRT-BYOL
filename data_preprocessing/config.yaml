@@ -20,7 +20,7 @@ mid_stage_file_path:
   hes_procedure: hes_procedure.parquet
   cprd_test: cprd_test.parquet
   additional: additional.parquet
-  hf_data: HF_2005_2015.parquet
+  hf_data: HF_1985_2015_raw.parquet
   bmi: bmi.parquet
   bp_low: bp_low.parquet
   bp_high: bp_high.parquet

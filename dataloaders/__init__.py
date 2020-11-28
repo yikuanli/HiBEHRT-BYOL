@@ -1,2 +1,3 @@
 from dataloaders.SSLDataLoader import SSLDataLoader as SSL
 from dataloaders.EHR2VecDataLoader import EHR2VecDataLoader
+from dataloaders.MLMBYOLDataLoader import MlmByolDataLoader
