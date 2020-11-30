@@ -1,5 +1,5 @@
 env_params:
-  gpus: 3
+  gpus: 1
   accelerator: ddp
   accumulate_grad_batches: 4
   max_epochs: 1000
@@ -11,8 +11,8 @@ callback_params:
 base_params:
   dataloader: MlmByolDataLoader
   dataloader_params:
-    token_dict_path:  /well/rahimi/users/sev854/project/HiBEHRT/data/dict4all
-    age_dict_path:  /well/rahimi/users/sev854/project/HiBEHRT/data/dict4age
+    token_dict_path:  /home/shared/yikuan/HiBEHRT/data/dict4all
+    age_dict_path:  /home/shared/yikuan/HiBEHRT/data/dict4age
     max_seq_length: 1500
     segment_length: 100
     move_length: 50
@@ -35,12 +35,12 @@ base_params:
     projector_size: 250
     moving_average_decay: 0.99
     optimiser: Adam
-    optimiser_params: {'lr': 0.0005, 'weight_decay': 0.0000015}
-    scheduler: {warmup_epochs: 1, max_epochs: 1000}
+    optimiser_params: {'lr': 0.0005, 'weight_decay': 0.0}
+    scheduler: {warmup_epochs: 1, max_epochs: 1000, warmup_start_lr: 0.00001, eta_min: 0.00001}
     random_mask: 0.85
 train_params:
-  data_path:  /well/rahimi/users/sev854/project/HiBEHRT/data/selfsupervise.parquet
-  batch_size: 32
+  data_path: /home/shared/yikuan/HiBEHRT/data/SSL/ssl_1985_2015.parquet 
+  batch_size: 16
   shuffle: true
   num_workers: 3
 eval_params:
