@@ -34,6 +34,7 @@ def main():
     # define logger
     logger = TensorBoardLogger(save_path, name='my_log')
 
+    print('initialize data loader')
     # create data loader
     input_fn = eval(base_params['dataloader'])
     train_params.update(base_params['dataloader_params'])
@@ -46,6 +47,7 @@ def main():
         params=eval_params
     )
 
+    print('initialize model')
     # create the model and optimiser
     model = eval(base_params['model'])
     model_params = base_params['model_params']
