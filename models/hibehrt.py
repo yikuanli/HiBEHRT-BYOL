@@ -29,7 +29,7 @@ class EHR2Vec(pl.LightningModule):
 
         self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
         self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
-        self.f1 = pl.metrics.classification.F1(num_classes=1)
+        # self.f1 = pl.metrics.classification.F1(num_classes=1)
 
         self.sig = nn.Sigmoid()
 
@@ -79,7 +79,7 @@ class EHR2Vec(pl.LightningModule):
             self.pred_list.append(self.sig(pred).cpu())
             self.target_list.append(label.cpu())
 
-        self.f1(self.sig(pred), label)
+        # self.f1(self.sig(pred), label)
         self.valid_prc(self.sig(pred), label)
         self.valid_recall(self.sig(pred), label)
 
@@ -108,7 +108,7 @@ class EHR2Vec(pl.LightningModule):
         # log epoch metric
         self.log('valid_precision', self.valid_prc.compute())
         self.log('valid_recall', self.valid_recall.compute())
-        self.log('F1_score', self.f1.compute())
+        # self.log('F1_score', self.f1.compute())
 
         if self.manual_valid:
             label = torch.cat(self.target_list, dim=0).view(-1)
