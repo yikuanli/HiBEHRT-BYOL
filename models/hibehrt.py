@@ -3,14 +3,6 @@ from models.parts.embeddings import Embedding
 import torch.nn as nn
 import pytorch_lightning as pl
 import torch
-import copy
-import torch.nn.functional as F
-from torch.optim import *
-import pytorch_pretrained_bert as Bert
-from torch.distributions.bernoulli import Bernoulli
-import copy
-from pl_bolts.callbacks.self_supervised import BYOLMAWeightUpdate
-from typing import Any
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
@@ -101,7 +93,7 @@ class EHR2Vec(pl.LightningModule):
         # log epoch metric
         self.log('valid_precision', self.valid_prc.compute())
         self.log('valid_recall', self.valid_recall.compute())
-        
+
         if self.manual_valid:
             label = torch.cat(self.target_list, dim=0).view(-1)
             pred = torch.cat(self.pred_list, dim=0).view(-1)
@@ -121,6 +113,7 @@ class EHR2Vec(pl.LightningModule):
         print('auroc', ROC)
 
         return {'auprc': PRC, 'auroc': ROC}
+
 
 class Extractor(nn.Module):
     def __init__(self, params):

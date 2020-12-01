@@ -9,7 +9,7 @@ from torch.optim import *
 import pytorch_pretrained_bert as Bert
 from torch.distributions.bernoulli import Bernoulli
 import copy
-from pl_bolts.callbacks.self_supervised import BYOLMAWeightUpdate
+from pl_bolts.callbacks.byol_updates import BYOLMAWeightUpdate
 from typing import Any
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
