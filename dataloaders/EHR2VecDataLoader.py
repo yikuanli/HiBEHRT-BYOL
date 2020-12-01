@@ -73,6 +73,7 @@ def EHR2VecDataLoader(params):
         if 'fraction' in params:
             data = data.sample(frac=params['fraction']).reset_index(drop=True)
         print('data size:', len(data))
+
         dset = EHR2VecDset(dataset=data, params=params)
 
         sampler = None
