@@ -29,7 +29,7 @@ class EHR2Vec(pl.LightningModule):
 
         self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
         self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
-        self.f1 = pl.metrics.classification.Fbeta(num_classes=1)
+        self.f1 = pl.metrics.classification.F1(num_classes=1)
 
         self.sig = nn.Sigmoid()
 
