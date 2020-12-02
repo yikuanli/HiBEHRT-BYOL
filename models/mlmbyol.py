@@ -27,8 +27,12 @@ class SSLMLMBYOL(pl.LightningModule):
         self.target_network = copy.deepcopy(self.online_network)
         self.weight_callback = BYOLMAWeightUpdate()
 
-    def on_train_batch_end(self, outputs: Any, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
-        self.weight_callback.on_train_batch_end(self.trainer, self, batch, batch_idx, dataloader_idx)
+    def on_train_batch_end(self, outputs, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
+        # Add callback for user automatically since it's key to BYOL weight update
+        self.weight_callback.on_train_batch_end(self.trainer, self, outputs, batch, batch_idx, dataloader_idx)
+
+    # def on_train_batch_end(self, outputs: Any, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
+    #     self.weight_callback.on_train_batch_end(self.trainer, self, batch, outputs,batch_idx, dataloader_idx)
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask, prob):
         y, _, _ = self.online_network(record, age, seg, position, att_mask, h_att_mask, prob)
