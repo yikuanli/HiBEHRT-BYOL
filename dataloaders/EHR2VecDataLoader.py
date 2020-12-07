@@ -72,6 +72,13 @@ def EHR2VecDataLoader(params):
         data = pd.read_parquet(params['data_path'])
         if 'fraction' in params:
             data = data.sample(frac=params['fraction']).reset_index(drop=True)
+
+        if params['selection'] is not None:
+            for key in params['selection']:
+                data[key] = data.code.apply(lambda x: sum([1 for each in x if each[0:3] == key]))
+                data = data[data[key] > 1]
+            data = data.reset_index(drop=True)
+
         print('data size:', len(data))
 
         dset = EHR2VecDset(dataset=data, params=params)
