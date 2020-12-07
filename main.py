@@ -58,7 +58,7 @@ def main():
     env_params.update({'logger': logger})
     env_params.update({'default_root_dir': os.path.join(save_path, 'checkpoint')})
 
-    callback_params.update({'filepath': os.path.join(save_path, 'checkpoint')})
+    callback_params.update({'dirpath': save_path})
     checkpoint_callback = ModelCheckpoint(**callback_params)
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
