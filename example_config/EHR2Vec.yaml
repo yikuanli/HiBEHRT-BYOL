@@ -8,6 +8,8 @@ callback_params:
   monitor: average_precision
   mode: max
   save_top_k: 1
+  save_last: true
+  filename: save_ckpt
 base_params:
   dataloader: EHR2VecDataLoader
   dataloader_params:

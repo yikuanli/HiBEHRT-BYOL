@@ -34,6 +34,7 @@ def main():
     # define logger
     logger = TensorBoardLogger(save_path, name='my_log')
 
+    print('initialize data loader')
     # create data loader
     input_fn = eval(base_params['dataloader'])
     train_params.update(base_params['dataloader_params'])
@@ -46,6 +47,7 @@ def main():
         params=eval_params
     )
 
+    print('initialize model')
     # create the model and optimiser
     model = eval(base_params['model'])
     model_params = base_params['model_params']
@@ -56,7 +58,7 @@ def main():
     env_params.update({'logger': logger})
     env_params.update({'default_root_dir': os.path.join(save_path, 'checkpoint')})
 
-    callback_params.update({'filepath': os.path.join(save_path, 'checkpoint')})
+    callback_params.update({'dirpath': save_path})
     checkpoint_callback = ModelCheckpoint(**callback_params)
     lr_monitor = LearningRateMonitor(logging_interval='step')
 

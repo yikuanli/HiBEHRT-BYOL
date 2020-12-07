@@ -9,7 +9,7 @@ from torch.optim import *
 import pytorch_pretrained_bert as Bert
 from torch.distributions.bernoulli import Bernoulli
 import copy
-from pl_bolts.callbacks.self_supervised import BYOLMAWeightUpdate
+from pl_bolts.callbacks.byol_updates import BYOLMAWeightUpdate
 from typing import Any
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
@@ -27,8 +27,12 @@ class SSLMLMBYOL(pl.LightningModule):
         self.target_network = copy.deepcopy(self.online_network)
         self.weight_callback = BYOLMAWeightUpdate()
 
-    def on_train_batch_end(self, outputs: Any, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
-        self.weight_callback.on_train_batch_end(self.trainer, self, batch, batch_idx, dataloader_idx)
+    def on_train_batch_end(self, outputs, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
+        # Add callback for user automatically since it's key to BYOL weight update
+        self.weight_callback.on_train_batch_end(self.trainer, self, outputs, batch, batch_idx, dataloader_idx)
+
+    # def on_train_batch_end(self, outputs: Any, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
+    #     self.weight_callback.on_train_batch_end(self.trainer, self, batch, outputs,batch_idx, dataloader_idx)
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask, prob):
         y, _, _ = self.online_network(record, age, seg, position, att_mask, h_att_mask, prob)
@@ -53,7 +57,8 @@ class SSLMLMBYOL(pl.LightningModule):
         return loss.mean()  # mean over batch level
 
     def shared_step(self, batch, batch_idx):
-        record, age, seg, position, att_mask, h_att_mask = batch
+        record, age, seg, position, att_mask, h_att_mask = \
+            batch['code'], batch['age'], batch['seg'], batch['position'], batch['att_mask'], batch['h_att_mask']
 
         bournilli_mask = Bernoulli(torch.ones_like(h_att_mask) * self.params['random_mask']).sample()
 
@@ -96,7 +101,6 @@ class SSLMLMBYOL(pl.LightningModule):
         optimizer = eval(self.params['optimiser'])
         optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
-        optimizer = LARSWrapper(optimizer)
         scheduler = LinearWarmupCosineAnnealingLR(
             optimizer,
             **self.params['scheduler']

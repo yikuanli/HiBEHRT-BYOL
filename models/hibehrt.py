@@ -9,7 +9,7 @@ from torch.optim import *
 import pytorch_pretrained_bert as Bert
 from torch.distributions.bernoulli import Bernoulli
 import copy
-from pl_bolts.callbacks.self_supervised import BYOLMAWeightUpdate
+from pl_bolts.callbacks.byol_updates import BYOLMAWeightUpdate
 from typing import Any
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
@@ -29,6 +29,8 @@ class EHR2Vec(pl.LightningModule):
 
         self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
         self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
+        self.f1 = pl.metrics.classification.F1(num_classes=1)
+
         self.sig = nn.Sigmoid()
 
         self.manual_valid = self.params['manual_valid']
@@ -47,7 +49,9 @@ class EHR2Vec(pl.LightningModule):
         return y
 
     def shared_step(self, batch, batch_idx):
-        record,  age, seg, position, att_mask, h_att_mask, label = batch
+        record,  age, seg, position, att_mask, h_att_mask, label = \
+            batch['code'], batch['age'], batch['seg'], batch['position'], batch['att_mask'], batch['h_att_mask'], batch['label']
+
         loss_fct = nn.BCEWithLogitsLoss()
 
         y = self.forward(record, age, seg, position, att_mask, h_att_mask)
@@ -59,9 +63,6 @@ class EHR2Vec(pl.LightningModule):
     def training_step(self, batch, batch_idx):
         loss, _, _ = self.shared_step(batch, batch_idx)
 
-        # log results
-        # self.log_dict({'losses': {"train_loss": loss}})
-        # self.logger.experiment.add_scalars("losses", {"train_loss": loss}, global_step=self.global_step)
         self.log("train_loss", loss)
 
         return loss
@@ -71,14 +72,13 @@ class EHR2Vec(pl.LightningModule):
 
         # log results
         self.log("val_loss", loss)
-        # self.logger.experiment.add_scalars("losses", {"val_loss": loss}, global_step=self.global_step)
 
         if self.manual_valid:
             self.pred_list.append(self.sig(pred).cpu())
             self.target_list.append(label.cpu())
-
         self.valid_prc(self.sig(pred), label)
         self.valid_recall(self.sig(pred), label)
+        self.f1(self.sig(pred), label)
 
     def test_step(self, batch, batch_idx):
         loss, pred, label = self.shared_step(batch, batch_idx)
@@ -94,7 +94,6 @@ class EHR2Vec(pl.LightningModule):
         optimizer = eval(self.params['optimiser'])
         optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
-        optimizer = LARSWrapper(optimizer)
         scheduler = LinearWarmupCosineAnnealingLR(
             optimizer,
             **self.params['scheduler']
@@ -105,6 +104,7 @@ class EHR2Vec(pl.LightningModule):
         # log epoch metric
         self.log('valid_precision', self.valid_prc.compute())
         self.log('valid_recall', self.valid_recall.compute())
+        self.log('F1_score', self.f1.compute())
 
         if self.manual_valid:
             label = torch.cat(self.target_list, dim=0).view(-1)
@@ -125,6 +125,7 @@ class EHR2Vec(pl.LightningModule):
         print('auroc', ROC)
 
         return {'auprc': PRC, 'auroc': ROC}
+
 
 class Extractor(nn.Module):
     def __init__(self, params):
