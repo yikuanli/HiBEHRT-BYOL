@@ -92,7 +92,6 @@ class EHR2Vec(pl.LightningModule):
         optimizer = eval(self.params['optimiser'])
         optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
-        optimizer = LARSWrapper(optimizer)
         scheduler = LinearWarmupCosineAnnealingLR(
             optimizer,
             **self.params['scheduler']
