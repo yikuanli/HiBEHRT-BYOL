@@ -33,12 +33,12 @@ class SSLDset(Dataset):
 
         sample = self._compose(sample)
 
-        return torch.LongTensor(sample['code']), \
-               torch.LongTensor(sample['age']), \
-               torch.LongTensor(sample['seg']), \
-               torch.LongTensor(sample['position']), \
-               torch.LongTensor(sample['att_mask']), \
-               torch.LongTensor(sample['h_att_mask'])
+        return {'code': torch.LongTensor(sample['code']),
+                'age': torch.LongTensor(sample['age']),
+                'seg': torch.LongTensor(sample['seg']),
+                'position': torch.LongTensor(sample['position']),
+                'att_mask': torch.LongTensor(sample['att_mask']),
+                'h_att_mask': torch.LongTensor(sample['h_att_mask'])}
 
     def __len__(self):
         return len(self.data)

@@ -57,7 +57,8 @@ class SSLMLMBYOL(pl.LightningModule):
         return loss.mean()  # mean over batch level
 
     def shared_step(self, batch, batch_idx):
-        record, age, seg, position, att_mask, h_att_mask = batch
+        record, age, seg, position, att_mask, h_att_mask = \
+            batch['code'], batch['age'], batch['seg'], batch['position'], batch['att_mask'], batch['h_att_mask']
 
         bournilli_mask = Bernoulli(torch.ones_like(h_att_mask) * self.params['random_mask']).sample()
 

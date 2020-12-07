@@ -49,7 +49,9 @@ class EHR2Vec(pl.LightningModule):
         return y
 
     def shared_step(self, batch, batch_idx):
-        record,  age, seg, position, att_mask, h_att_mask, label = batch
+        record,  age, seg, position, att_mask, h_att_mask, label = \
+            batch['code'], batch['age'], batch['seg'], batch['position'], batch['att_mask'], batch['h_att_mask'], batch['label']
+
         loss_fct = nn.BCEWithLogitsLoss()
 
         y = self.forward(record, age, seg, position, att_mask, h_att_mask)
