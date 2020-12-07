@@ -4,6 +4,37 @@ import math
 import random
 
 
+class RandomKeepDiagMed(object):
+    def __init__(self, diag='DIA', med='MED', keep_prob=0.25):
+        self.name_list = [diag, med]
+        self.keep_prob = keep_prob
+
+    def __call__(self, sample):
+        prob = random.random()
+        code = sample['code']
+        age = sample['age']
+        seg = sample['seg']
+        position = sample['position']
+
+        if prob < self.keep_prob:
+            new_code = []
+            new_age = []
+            new_seg = []
+            new_position = []
+            for i in range(len(code)):
+                if code[i][0:3] in self.name_list:
+                    new_code.append(code[i])
+                    new_age.append(age[i])
+                    new_seg.append(seg[i])
+                    new_position.append(position[i])
+            sample.update({
+                'code': np.array(new_code),
+                'age': np.array(new_age),
+                'seg': np.array(new_seg),
+                'position': np.array(new_position)})
+        return sample
+
+
 class RandomCropSequence(object):
     def __init__(self, p, seq_threshold=50):
         # p probability (0, 1) of doing random crop
