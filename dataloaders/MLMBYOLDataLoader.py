@@ -47,6 +47,7 @@ class SSLDset(Dataset):
 def MlmByolDataLoader(params):
     if params['data_path'] is not None:
         data = pd.read_parquet(params['data_path'])
+        print('number of patients:', len(data))
         dset = SSLDset(dataset=data, params=params)
         dataloader = DataLoader(dataset=dset,
                                 batch_size=params['batch_size'],
