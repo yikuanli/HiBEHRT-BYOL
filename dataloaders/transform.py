@@ -135,7 +135,7 @@ class MordalitySelection(object):
             code_list = []
             age_list = []
             for i in range(len(code)):
-                if code[i] in self.mordality:
+                if code[i][0:3] in self.mordality:
                     code_list.append(code[i])
                     age_list.append(age[i])
             sample.update({
