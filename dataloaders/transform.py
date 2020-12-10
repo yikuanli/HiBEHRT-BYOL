@@ -211,6 +211,37 @@ class FormatAttentionMask(object):
         return sample
 
 
+class RemoveSEP(object):
+    def __init__(self, symbol='SEP'):
+        self.symbol = symbol
+
+    def __call__(self, sample):
+        code = sample['code']
+        age = sample['age']
+        seg = sample['seg']
+        position = sample['position']
+
+        code_list = []
+        age_list = []
+        seg_list = []
+        position_list = []
+        for i in range(len(code)):
+            if code[i] != 'SEP':
+                code_list.append(code[i])
+                age_list.append(age[i])
+                seg_list.append(seg[i])
+                position_list.append(position[i])
+
+        sample.update({
+            'code': np.array(code_list),
+            'age': np.array(age_list),
+            'seg': np.array(seg_list),
+            'position': np.array(position_list)
+        })
+
+        return sample
+
+
 class FormatHierarchicalStructure(object):
     def __init__(self, segment_length, move_length, max_seq_length):
         self.segment_length = segment_length
