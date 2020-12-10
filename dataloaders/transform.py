@@ -4,6 +4,46 @@ import math
 import random
 
 
+class CreateSegandPosition(object):
+    def index_seg(self, tokens, symbol='SEP'):
+        flag = 0
+        seg = []
+
+        for token in tokens:
+            if token == symbol:
+                seg.append(flag)
+                if flag == 0:
+                    flag = 1
+                else:
+                    flag = 0
+            else:
+                seg.append(flag)
+        return seg
+
+    def position_idx(self, tokens, symbol='SEP'):
+        pos = []
+        flag = 0
+
+        for token in tokens:
+            if token == symbol:
+                pos.append(flag)
+                flag += 1
+            else:
+                pos.append(flag)
+        return pos
+
+    def __call__(self, sample):
+        code = sample['code']
+        position = self.position_idx(code)
+        seg = self.index_seg(code)
+
+        sample.update({
+            'seg': np.array(seg),
+            'position': np.array(position)
+        })
+        return sample
+
+
 class RandomKeepDiagMed(object):
     def __init__(self, diag='DIA', med='MED', keep_prob=0.25):
         self.name_list = [diag, med]
@@ -72,22 +112,47 @@ class TruncateSeqence(object):
     def __call__(self, sample):
         sample.update({
             'code': sample['code'][-self.max_seq_length:],
-            'age': sample['age'][-self.max_seq_length:],
-            'seg': sample['seg'][-self.max_seq_length:],
-            'position': sample['position'][-self.max_seq_length:]})
+            'age': sample['age'][-self.max_seq_length:]
+            # 'seg': sample['seg'][-self.max_seq_length:],
+            # 'position': sample['position'][-self.max_seq_length:]
+        })
         return sample
 
 
-class CalibratePosition(object):
+class MordalitySelection(object):
+    def __init__(self, mordality_list):
+        self.mordality = mordality_list
+        if mordality_list is not None:
+            self.mordality.append('SEP')
+
     def __call__(self, sample):
-        position = sample['position']
-        position_list = []
-        for each in position:
-            each = int(each) - int(position[0])
-            position_list.append(str(each))
+        if self.mordality is not  None:
+            code = sample['code']
+            age = sample['age']
 
-        sample.update({'position': position_list})
+            code_list = []
+            age_list = []
+            for i in range(len(code)):
+                if code[i] in self.mordality:
+                    code_list.append(code[i])
+                    age_list.append(age[i])
+            sample.update({
+                'code': np.array(code_list),
+                'age': np.array(age_list)
+            })
         return sample
+
+
+# class CalibratePosition(object):
+#     def __call__(self, sample):
+#         position = sample['position']
+#         position_list = []
+#         for each in position:
+#             each = int(each) - int(position[0])
+#             position_list.append(str(each))
+#
+#         sample.update({'position': position_list})
+#         return sample
 
 
 class TokenAgeSegPosition2idx(object):

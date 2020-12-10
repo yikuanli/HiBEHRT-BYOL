@@ -11,10 +11,11 @@ class SSLDset(Dataset):
         # filter out the patient with number of visits less than min_visit
         self.data = dataset
         self._compose = transforms.Compose([
+            transform.MordalitySelection(params['mordality']),
             transform.RandomKeepDiagMed(),
             transform.RandomCropSequence(p=params['p'], seq_threshold=params['seq_threshold']),
             transform.TruncateSeqence(params['max_seq_length']),
-            transform.CalibratePosition(),
+            transform.CreateSegandPosition(),
             transform.TokenAgeSegPosition2idx(params['token_dict_path'], params['age_dict_path']),
             transform.RetriveSeqLengthAndPadding(params['max_seq_length']),
             transform.FormatAttentionMask(params['max_seq_length']),
