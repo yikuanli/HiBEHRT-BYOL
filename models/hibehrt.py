@@ -14,12 +14,16 @@ from typing import Any
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
+from utils.utils import load_obj
 
 
 class EHR2Vec(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.params = params
+
+        vocab_size = len(load_obj(self.params['token_dict_path'])['token2idx'].keys())
+        self.params.update({'vocab_size': vocab_size})
 
         self.save_hyperparameters()
 
