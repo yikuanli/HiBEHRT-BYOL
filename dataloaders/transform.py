@@ -126,7 +126,7 @@ class MordalitySelection(object):
             self.mordality.append('SEP')
 
     def __call__(self, sample):
-        if self.mordality is not  None:
+        if self.mordality is not None:
             code = sample['code']
             age = sample['age']
 
