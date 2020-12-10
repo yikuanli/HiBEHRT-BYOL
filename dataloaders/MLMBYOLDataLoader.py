@@ -28,9 +28,10 @@ class SSLDset(Dataset):
         return: age, code, position, segmentation, mask, label
         """
         sample = {'code': self.data.code[index],
-                   'age': self.data.age[index],
-                   'seg': self.data.seg[index],
-                   'position': self.data.position[index]}
+                  'age': self.data.age[index]
+                  # 'seg': self.data.seg[index],
+                  # 'position': self.data.position[index]
+                  }
 
         sample = self._compose(sample)
 

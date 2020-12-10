@@ -53,25 +53,26 @@ class RandomKeepDiagMed(object):
         prob = random.random()
         code = sample['code']
         age = sample['age']
-        seg = sample['seg']
-        position = sample['position']
+        # seg = sample['seg']
+        # position = sample['position']
 
         if prob < self.keep_prob:
             new_code = []
             new_age = []
-            new_seg = []
-            new_position = []
+            # new_seg = []
+            # new_position = []
             for i in range(len(code)):
                 if code[i][0:3] in self.name_list:
                     new_code.append(code[i])
                     new_age.append(age[i])
-                    new_seg.append(seg[i])
-                    new_position.append(position[i])
+                    # new_seg.append(seg[i])
+                    # new_position.append(position[i])
             sample.update({
                 'code': np.array(new_code),
-                'age': np.array(new_age),
-                'seg': np.array(new_seg),
-                'position': np.array(new_position)})
+                'age': np.array(new_age)
+                # 'seg': np.array(new_seg),
+                # 'position': np.array(new_position)
+            })
         return sample
 
 
@@ -99,9 +100,10 @@ class RandomCropSequence(object):
 
                 sample.update({
                     'code': sample['code'][start:(start+len_choise)],
-                    'age': sample['age'][start:(start+len_choise)],
-                    'seg': sample['seg'][start:(start+len_choise)],
-                    'position': sample['position'][start:(start+len_choise)]})
+                    'age': sample['age'][start:(start+len_choise)]
+                    # 'seg': sample['seg'][start:(start+len_choise)],
+                    # 'position': sample['position'][start:(start+len_choise)]
+                })
                 return sample
 
 

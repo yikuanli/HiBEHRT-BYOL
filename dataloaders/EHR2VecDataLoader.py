@@ -49,8 +49,6 @@ class EHR2VecDset(Dataset):
         sample = {
             'code': self.data.code[index],
             'age': self.data.age[index],
-            # 'seg': self.data.seg[index],
-            # 'position': self.data.position[index],
             'label': self.data.label[index]
         }
 
