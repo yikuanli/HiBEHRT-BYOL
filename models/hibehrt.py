@@ -1,4 +1,4 @@
-from models.parts.blocks import BertPooler, BertEncoder
+from models.parts.blocks import BertPooler, BertEncoder, BertLayerNorm
 from models.parts.embeddings import Embedding
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -41,6 +41,21 @@ class EHR2Vec(pl.LightningModule):
 
         if self.manual_valid:
             self.reset_buffer_valid()
+
+        self.apply(self.init_bert_weights)
+
+    def init_bert_weights(self, module):
+        """ Initialize the weights.
+        """
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            # Slightly different from the TF version which uses truncated_normal for initialization
+            # cf https://github.com/pytorch/pytorch/pull/5617
+            module.weight.data.normal_(mean=0.0, std=self.config.initializer_range)
+        elif isinstance(module, BertLayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
 
     def reset_buffer_valid(self):
         self.pred_list = []
