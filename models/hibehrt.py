@@ -114,8 +114,13 @@ class EHR2Vec(pl.LightningModule):
             label = torch.cat(self.target_list, dim=0).view(-1)
             pred = torch.cat(self.pred_list, dim=0).view(-1)
 
-            self.log('average_precision', average_precision(pred, target=label))
-            self.log('auroc', auroc(pred, label))
+            auprc_score = average_precision(pred, target=label)
+            auroc_score = auroc(pred, label)
+
+            print('epoch : {} AUROC: {} AUPRC: {}'.format(self.current_epoch,auroc_score, auprc_score ))
+
+            self.log('average_precision', auprc_score)
+            self.log('auroc', auroc_score)
             self.reset_buffer_valid()
 
     def test_epoch_end(self, outs):
