@@ -16,8 +16,8 @@ class Embedding(nn.Module):
         self.word_embeddings = nn.Embedding(params['vocab_size'], params['hidden_size'])
         self.segment_embeddings = nn.Embedding(params['seg_vocab_size'], params['hidden_size'])
         self.age_embeddings = nn.Embedding(params['age_vocab_size'], params['hidden_size'])
-        self.posi_embeddings = nn.Embedding(params['max_position_length'], params['hidden_size']). \
-            from_pretrained(embeddings=self._init_posi_embedding(params['max_position_length'], params['hidden_size']))
+        self.posi_embeddings = nn.Embedding(params['max_seq_length'], params['hidden_size']). \
+            from_pretrained(embeddings=self._init_posi_embedding(params['max_seq_length'], params['hidden_size']))
 
         self.LayerNorm = Bert.modeling.BertLayerNorm(params['hidden_size'], eps=1e-12)
         self.dropout = nn.Dropout(params['hidden_dropout_prob'])

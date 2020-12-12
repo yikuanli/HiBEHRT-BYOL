@@ -34,7 +34,7 @@ class EHR2VecDset(Dataset):
             transform.MordalitySelection(params['mordality']),
             transform.TruncateSeqence(params['max_seq_length']),
             transform.CreateSegandPosition(),
-            transform.RemoveSEP(),
+            # transform.RemoveSEP(),
             transform.TokenAgeSegPosition2idx(params['token_dict_path'], params['age_dict_path']),
             transform.RetriveSeqLengthAndPadding(params['max_seq_length']),
             transform.FormatAttentionMask(params['max_seq_length']),
