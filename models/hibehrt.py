@@ -5,7 +5,6 @@ import pytorch_lightning as pl
 import torch
 import copy
 import torch.nn.functional as F
-from optimiser import *
 import pytorch_pretrained_bert as Bert
 from torch.distributions.bernoulli import Bernoulli
 import copy
