@@ -120,7 +120,7 @@ class EHR2Vec(pl.LightningModule):
             {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)], 'weight_decay': 0}
         ]
 
-        optimizer = BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
+        optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
                              warmup=self.params['optimiser_params']['warmup_proportion'])
 
         # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
