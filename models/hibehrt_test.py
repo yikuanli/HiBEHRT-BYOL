@@ -113,8 +113,24 @@ class EHR2VecTest(pl.LightningModule):
         self.valid_recall(self.sig(pred), label)
 
     def configure_optimizers(self):
-        optimizer = eval(self.params['optimiser'])
-        optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
+        # optimizer = eval(self.params['optimiser'])
+        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
+
+        config = {
+            'lr': 3e-5,
+            'warmup_proportion': 0.1,
+            'weight_decay': 0.01
+        }
+
+        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+
+        optimizer_grouped_parameters = [
+            {'params': [p for n, p in list(self.named_parameters()) if not any(nd in n for nd in no_decay)],
+             'weight_decay': config.get('weight_decay')},
+            {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)], 'weight_decay': 0}
+        ]
+
+        optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=config['lr'], warmup=config['warmup_proportion'])
 
         # scheduler = LinearWarmupCosineAnnealingLR(
         #     optimizer,
