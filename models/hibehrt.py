@@ -5,7 +5,7 @@ import pytorch_lightning as pl
 import torch
 import copy
 import torch.nn.functional as F
-from torch.optim import *
+from optimiser import *
 import pytorch_pretrained_bert as Bert
 from torch.distributions.bernoulli import Bernoulli
 import copy
@@ -23,7 +23,8 @@ class EHR2Vec(pl.LightningModule):
         self.params = params
 
         vocab_size = len(load_obj(self.params['token_dict_path'])['token2idx'].keys())
-        self.params.update({'vocab_size': vocab_size})
+        age_size = len(load_obj(self.params['age_dict_path'])['token2idx'].keys())
+        self.params.update({'vocab_size': vocab_size, 'age_vocab_size': age_size})
 
         self.save_hyperparameters()
 
@@ -110,8 +111,20 @@ class EHR2Vec(pl.LightningModule):
         self.valid_recall(self.sig(pred), label)
 
     def configure_optimizers(self):
-        optimizer = eval(self.params['optimiser'])
-        optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
+        # optimizer = eval(self.params['optimiser'])
+
+        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+
+        optimizer_grouped_parameters = [
+            {'params': [p for n, p in list(self.named_parameters()) if not any(nd in n for nd in no_decay)],
+             'weight_decay': self.params['optimiser_params']['weight_decay']},
+            {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)], 'weight_decay': 0}
+        ]
+
+        optimizer = BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
+                             warmup=self.params['optimiser_params']['warmup_proportion'])
+
+        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
         # scheduler = LinearWarmupCosineAnnealingLR(
         #     optimizer,
