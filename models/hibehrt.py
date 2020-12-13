@@ -113,11 +113,11 @@ class EHR2Vec(pl.LightningModule):
         optimizer = eval(self.params['optimiser'])
         optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
-        scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer,
-            **self.params['scheduler']
-        )
-        return [optimizer], [scheduler]
+        # scheduler = LinearWarmupCosineAnnealingLR(
+        #     optimizer,
+        #     **self.params['scheduler']
+        # )
+        return optimizer
 
     def validation_epoch_end(self, outs):
         # log epoch metric
