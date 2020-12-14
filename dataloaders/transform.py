@@ -187,13 +187,35 @@ class CalibrateHierarchicalPosition(object):
                 return element - value
             else:
                 return element
-        
+
         position_list = []
         for seg in position:
             position_temp = [calibrate(each, seg[0]) for each in seg]
             position_list.append(position_temp)
 
         sample.update({'position': np.array(position_list)})
+        return sample
+
+
+class CalibrateSegmentation(object):
+    def __call__(self, sample):
+        segment = sample['seg']
+
+        def reverse(element):
+            if element == 0:
+                return 1.
+            else:
+                return 0
+
+        segment_list = []
+        for seg in segment:
+            if seg[0] == 0:
+                segment_list.append(seg)
+            else:
+                seg_tmp = [reverse(each) for each in seg]
+                segment_list.append(seg_tmp)
+        sample.update({'seg': np.array(segment_list)})
+
         return sample
 
 
