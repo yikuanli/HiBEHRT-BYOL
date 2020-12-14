@@ -39,7 +39,8 @@ class EHR2VecDset(Dataset):
             transform.RetriveSeqLengthAndPadding(params['max_seq_length']),
             transform.FormatAttentionMask(params['max_seq_length']),
             transform.FormatHierarchicalStructure(params['segment_length'], params['move_length'],
-                                                  params['max_seq_length'])
+                                                  params['max_seq_length']),
+            transform.CalibrateHierarchicalPosition()
         ])
 
     def __getitem__(self, index):

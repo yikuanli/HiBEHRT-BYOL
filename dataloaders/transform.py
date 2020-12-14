@@ -177,16 +177,24 @@ class MordalitySelection(object):
             })
         return sample
 
-# class CalibratePosition(object):
-#     def __call__(self, sample):
-#         position = sample['position']
-#         position_list = []
-#         for each in position:
-#             each = int(each) - int(position[0])
-#             position_list.append(str(each))
-#
-#         sample.update({'position': position_list})
-#         return sample
+
+class CalibrateHierarchicalPosition(object):
+    def __call__(self, sample):
+        position = sample['position']
+
+        def calibrate(element, value):
+            if element != 0:
+                return element - value
+            else:
+                return element
+        
+        position_list = []
+        for seg in position:
+            position_temp = [calibrate(each, seg[0]) for each in seg]
+            position_list.append(position_temp)
+
+        sample.update({'position': np.array(position_list)})
+        return sample
 
 
 class TokenAgeSegPosition2idx(object):
