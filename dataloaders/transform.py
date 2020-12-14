@@ -354,15 +354,15 @@ class FormatHierarchicalStructure(object):
             att_mask = sample['att_mask']
 
             code_list = [code[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                         range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
+                         range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
             age_list = [age[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
+                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
             seg_list = [seg[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
+                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
             position_list = [position[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
+                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
             att_mask_list = [att_mask[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
+                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
 
             # mask = np.zeros(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))
             # if sample['length'] <= self.segment_length:
