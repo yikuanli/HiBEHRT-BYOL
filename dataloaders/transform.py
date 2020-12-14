@@ -354,22 +354,23 @@ class FormatHierarchicalStructure(object):
             att_mask = sample['att_mask']
 
             code_list = [code[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                         range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+                         range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
             age_list = [age[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
             seg_list = [seg[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
             position_list = [position[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
             att_mask_list = [att_mask[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
-                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))]
 
-            mask = np.zeros(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)
-            if sample['length'] <= self.segment_length:
-                num = 1
-            else:
-                num = math.ceil((sample['length'] - self.segment_length) / self.move_length) + 1
-            mask[:num] = np.ones(num)
+            # mask = np.zeros(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))
+            # if sample['length'] <= self.segment_length:
+            #     num = 1
+            # else:
+            #     num = math.ceil((sample['length'] - self.segment_length) / self.move_length) + 1
+            # mask[:num] = np.ones(num)
+            mask = [1. if each[0] != 0 else 0. for each in code_list]
 
         #             mask = np.zeros(math.ceil(self.max_seq_length-self.segment_length/self.move_length) + 1)
         #             if sample['length'] <= self.segment_length:
