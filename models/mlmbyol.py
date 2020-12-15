@@ -23,7 +23,9 @@ class SSLMLMBYOL(pl.LightningModule):
         self.params = params
 
         vocab_size = len(load_obj(self.params['token_dict_path'])['token2idx'].keys())
-        self.params.update({'vocab_size': vocab_size})
+        age_size = len(load_obj(self.params['age_dict_path'])['token2idx'].keys())
+
+        self.params.update({'vocab_size': vocab_size, 'age_vocab_size': age_size})
 
         self.save_hyperparameters()
 
@@ -102,14 +104,24 @@ class SSLMLMBYOL(pl.LightningModule):
         return total_loss
 
     def configure_optimizers(self):
-        optimizer = eval(self.params['optimiser'])
-        optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
+        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 
-        scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer,
-            **self.params['scheduler']
-        )
-        return [optimizer], [scheduler]
+        optimizer_grouped_parameters = [
+            {'params': [p for n, p in list(self.named_parameters()) if not any(nd in n for nd in no_decay)],
+             'weight_decay': self.params['optimiser_params']['weight_decay']},
+            {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)], 'weight_decay': 0}
+        ]
+
+        optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
+                                               warmup=self.params['optimiser_params']['warmup_proportion'])
+
+        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
+
+        # scheduler = LinearWarmupCosineAnnealingLR(
+        #     optimizer,
+        #     **self.params['scheduler']
+        # )
+        return optimizer
 
 
 class HiBEHRT(nn.Module):
