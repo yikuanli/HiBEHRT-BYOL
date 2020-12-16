@@ -1,3 +1,2 @@
 from dataloaders.EHR2VecDataLoader import EHR2VecDataLoader
 from dataloaders.MLMBYOLDataLoader import MlmByolDataLoader
-from dataloaders.EHR2VecTestDataLoader import EHR2VecTestDataLoader
