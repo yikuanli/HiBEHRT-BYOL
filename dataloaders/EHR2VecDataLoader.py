@@ -31,13 +31,17 @@ class EHR2VecDset(Dataset):
         # filter out the patient with number of visits less than min_visit
         self.data = dataset
         self._compose = transforms.Compose([
+            transform.MordalitySelection(params['mordality']),
             transform.TruncateSeqence(params['max_seq_length']),
-            transform.CalibratePosition(),
+            transform.CreateSegandPosition(),
+            # transform.RemoveSEP(),
             transform.TokenAgeSegPosition2idx(params['token_dict_path'], params['age_dict_path']),
             transform.RetriveSeqLengthAndPadding(params['max_seq_length']),
             transform.FormatAttentionMask(params['max_seq_length']),
             transform.FormatHierarchicalStructure(params['segment_length'], params['move_length'],
-                                                  params['max_seq_length'])
+                                                  params['max_seq_length']),
+            transform.CalibrateHierarchicalPosition(),
+            transform.CalibrateSegmentation()
         ])
 
     def __getitem__(self, index):
@@ -48,8 +52,6 @@ class EHR2VecDset(Dataset):
         sample = {
             'code': self.data.code[index],
             'age': self.data.age[index],
-            'seg': self.data.seg[index],
-            'position': self.data.position[index],
             'label': self.data.label[index]
         }
 
@@ -72,6 +74,14 @@ def EHR2VecDataLoader(params):
         data = pd.read_parquet(params['data_path'])
         if 'fraction' in params:
             data = data.sample(frac=params['fraction']).reset_index(drop=True)
+
+        if params['selection'] is not None:
+            # select patients who have at least one records in the selection list
+            for key in params['selection']:
+                data[key] = data.code.apply(lambda x: sum([1 for each in x if each[0:3] == key]))
+                data = data[data[key] > 1]
+            data = data.reset_index(drop=True)
+
         print('data size:', len(data))
 
         dset = EHR2VecDset(dataset=data, params=params)

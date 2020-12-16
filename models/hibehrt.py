@@ -1,11 +1,10 @@
-from models.parts.blocks import BertPooler, BertEncoder
+from models.parts.blocks import BertPooler, BertEncoder, BertLayerNorm
 from models.parts.embeddings import Embedding
 import torch.nn as nn
 import pytorch_lightning as pl
 import torch
 import copy
 import torch.nn.functional as F
-from torch.optim import *
 import pytorch_pretrained_bert as Bert
 from torch.distributions.bernoulli import Bernoulli
 import copy
@@ -14,12 +13,17 @@ from typing import Any
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
+from utils.utils import load_obj
 
 
 class EHR2Vec(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.params = params
+
+        vocab_size = len(load_obj(self.params['token_dict_path'])['token2idx'].keys())
+        age_size = len(load_obj(self.params['age_dict_path'])['token2idx'].keys())
+        self.params.update({'vocab_size': vocab_size, 'age_vocab_size': age_size})
 
         self.save_hyperparameters()
 
@@ -37,6 +41,21 @@ class EHR2Vec(pl.LightningModule):
 
         if self.manual_valid:
             self.reset_buffer_valid()
+
+        self.apply(self.init_bert_weights)
+
+    def init_bert_weights(self, module):
+        """ Initialize the weights.
+        """
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            # Slightly different from the TF version which uses truncated_normal for initialization
+            # cf https://github.com/pytorch/pytorch/pull/5617
+            module.weight.data.normal_(mean=0.0, std=self.params['initializer_range'])
+        elif isinstance(module, BertLayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
 
     def reset_buffer_valid(self):
         self.pred_list = []
@@ -91,14 +110,26 @@ class EHR2Vec(pl.LightningModule):
         self.valid_recall(self.sig(pred), label)
 
     def configure_optimizers(self):
-        optimizer = eval(self.params['optimiser'])
-        optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
+        # optimizer = eval(self.params['optimiser'])
 
-        scheduler = LinearWarmupCosineAnnealingLR(
-            optimizer,
-            **self.params['scheduler']
-        )
-        return [optimizer], [scheduler]
+        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+
+        optimizer_grouped_parameters = [
+            {'params': [p for n, p in list(self.named_parameters()) if not any(nd in n for nd in no_decay)],
+             'weight_decay': self.params['optimiser_params']['weight_decay']},
+            {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)], 'weight_decay': 0}
+        ]
+
+        optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
+                             warmup=self.params['optimiser_params']['warmup_proportion'])
+
+        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
+
+        # scheduler = LinearWarmupCosineAnnealingLR(
+        #     optimizer,
+        #     **self.params['scheduler']
+        # )
+        return optimizer
 
     def validation_epoch_end(self, outs):
         # log epoch metric
@@ -110,8 +141,13 @@ class EHR2Vec(pl.LightningModule):
             label = torch.cat(self.target_list, dim=0).view(-1)
             pred = torch.cat(self.pred_list, dim=0).view(-1)
 
-            self.log('average_precision', average_precision(pred, target=label))
-            self.log('auroc', auroc(pred, label))
+            auprc_score = average_precision(pred, target=label)
+            auroc_score = auroc(pred, label)
+
+            print('epoch : {} AUROC: {} AUPRC: {}'.format(self.current_epoch,auroc_score, auprc_score ))
+
+            self.log('average_precision', auprc_score)
+            self.log('auroc', auroc_score)
             self.reset_buffer_valid()
 
     def test_epoch_end(self, outs):

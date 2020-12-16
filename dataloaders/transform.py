@@ -4,6 +4,46 @@ import math
 import random
 
 
+class CreateSegandPosition(object):
+    def index_seg(self, tokens, symbol='SEP'):
+        flag = 0
+        seg = []
+
+        for token in tokens:
+            if token == symbol:
+                seg.append(flag)
+                if flag == 0:
+                    flag = 1
+                else:
+                    flag = 0
+            else:
+                seg.append(flag)
+        return seg
+
+    def position_idx(self, tokens, symbol='SEP'):
+        pos = []
+        flag = 0
+
+        for token in tokens:
+            if token == symbol:
+                pos.append(flag)
+                flag += 1
+            else:
+                pos.append(flag)
+        return pos
+
+    def __call__(self, sample):
+        code = sample['code']
+        position = self.position_idx(code)
+        seg = self.index_seg(code)
+
+        sample.update({
+            'seg': np.array(seg),
+            'position': np.array(position)
+        })
+        return sample
+
+
 class RandomKeepDiagMed(object):
     def __init__(self, diag='DIA', med='MED', keep_prob=0.25):
         self.name_list = [diag, med]
@@ -13,25 +53,26 @@ class RandomKeepDiagMed(object):
         prob = random.random()
         code = sample['code']
         age = sample['age']
-        seg = sample['seg']
-        position = sample['position']
+        # seg = sample['seg']
+        # position = sample['position']
 
         if prob < self.keep_prob:
             new_code = []
             new_age = []
-            new_seg = []
-            new_position = []
+            # new_seg = []
+            # new_position = []
             for i in range(len(code)):
                 if code[i][0:3] in self.name_list:
                     new_code.append(code[i])
                     new_age.append(age[i])
-                    new_seg.append(seg[i])
-                    new_position.append(position[i])
+                    # new_seg.append(seg[i])
+                    # new_position.append(position[i])
             sample.update({
                 'code': np.array(new_code),
-                'age': np.array(new_age),
-                'seg': np.array(new_seg),
-                'position': np.array(new_position)})
+                'age': np.array(new_age)
+                # 'seg': np.array(new_seg),
+                # 'position': np.array(new_position)
+            })
         return sample
 
 
@@ -59,9 +100,10 @@ class RandomCropSequence(object):
 
                 sample.update({
                     'code': sample['code'][start:(start+len_choise)],
-                    'age': sample['age'][start:(start+len_choise)],
-                    'seg': sample['seg'][start:(start+len_choise)],
-                    'position': sample['position'][start:(start+len_choise)]})
+                    'age': sample['age'][start:(start+len_choise)]
+                    # 'seg': sample['seg'][start:(start+len_choise)],
+                    # 'position': sample['position'][start:(start+len_choise)]
+                })
                 return sample
 
 
@@ -72,21 +114,108 @@ class TruncateSeqence(object):
     def __call__(self, sample):
         sample.update({
             'code': sample['code'][-self.max_seq_length:],
-            'age': sample['age'][-self.max_seq_length:],
-            'seg': sample['seg'][-self.max_seq_length:],
-            'position': sample['position'][-self.max_seq_length:]})
+            'age': sample['age'][-self.max_seq_length:]
+            # 'seg': sample['seg'][-self.max_seq_length:],
+            # 'position': sample['position'][-self.max_seq_length:]
+        })
         return sample
 
 
-class CalibratePosition(object):
+# class MordalitySelection(object):
+#     def __init__(self, mordality_list):
+#         self.mordality = mordality_list
+#         if mordality_list is not None:
+#             self.mordality.append('SEP')
+#
+#     def __call__(self, sample):
+#         if self.mordality is not None:
+#             code = sample['code']
+#             age = sample['age']
+#
+#             code_list = []
+#             age_list = []
+#             for i in range(len(code)):
+#                 if code[i][0:3] in self.mordality:
+#                     code_list.append(code[i])
+#                     age_list.append(age[i])
+#             sample.update({
+#                 'code': np.array(code_list),
+#                 'age': np.array(age_list)
+#             })
+#         return sample
+
+class MordalitySelection(object):
+    def __init__(self, mordality_list):
+        self.mordality = mordality_list
+        if mordality_list is not None:
+            self.mordality.append('SEP')
+
+    def __call__(self, sample):
+        if self.mordality is not None:
+            code = sample['code']
+            age = sample['age']
+
+            code_list = []
+            age_list = []
+
+            last_code = 0
+            for i in range(len(code)):
+                if code[i][0:3] in self.mordality:
+                    if code[i][0:3] != 'SEP':
+                        code_list.append(code[i])
+                        age_list.append(age[i])
+                        last_code = code[i]
+                    else:
+                        if last_code != 'SEP':
+                            code_list.append(code[i])
+                            age_list.append(age[i])
+                            last_code = code[i]
+
+            sample.update({
+                'code': np.array(code_list),
+                'age': np.array(age_list)
+            })
+        return sample
+
+
+class CalibrateHierarchicalPosition(object):
     def __call__(self, sample):
         position = sample['position']
-        position_list = []
-        for each in position:
-            each = int(each) - int(position[0])
-            position_list.append(str(each))
 
-        sample.update({'position': position_list})
+        def calibrate(element, value):
+            if element != 0:
+                return element - value
+            else:
+                return element
+
+        position_list = []
+        for seg in position:
+            position_temp = [calibrate(each, seg[0]) for each in seg]
+            position_list.append(position_temp)
+
+        sample.update({'position': np.array(position_list)})
+        return sample
+
+
+class CalibrateSegmentation(object):
+    def __call__(self, sample):
+        segment = sample['seg']
+
+        def reverse(element):
+            if element == 0:
+                return 1.
+            else:
+                return 0
+
+        segment_list = []
+        for seg in segment:
+            if seg[0] == 0:
+                segment_list.append(seg)
+            else:
+                seg_tmp = [reverse(each) for each in seg]
+                segment_list.append(seg_tmp)
+        sample.update({'seg': np.array(segment_list)})
+
         return sample
 
 
@@ -144,6 +273,70 @@ class FormatAttentionMask(object):
         return sample
 
 
+class RemoveSEP(object):
+    def __init__(self, symbol='SEP'):
+        self.symbol = symbol
+
+    def __call__(self, sample):
+        code = sample['code']
+        age = sample['age']
+        seg = sample['seg']
+        position = sample['position']
+
+        code_list = []
+        age_list = []
+        seg_list = []
+        position_list = []
+        for i in range(len(code)):
+            if code[i] != 'SEP':
+                code_list.append(code[i])
+                age_list.append(age[i])
+                seg_list.append(seg[i])
+                position_list.append(position[i])
+
+        sample.update({
+            'code': np.array(code_list),
+            'age': np.array(age_list),
+            'seg': np.array(seg_list),
+            'position': np.array(position_list)
+        })
+
+        return sample
+
+
+# class FormatHierarchicalStructure(object):
+#     def __init__(self, segment_length, move_length, max_seq_length):
+#         self.segment_length = segment_length
+#         self.move_length = move_length
+#         self.max_seq_length = max_seq_length
+#
+#     def __call__(self, sample):
+#         if (self.max_seq_length-self.segment_length) % 50 != 0:
+#             raise ValueError('Need to set up (max seqence length - segment length) % move length == 0')
+#         else:
+#             code = [sample['code'][n*self.move_length:(self.segment_length + n*self.move_length)]
+#                     for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
+#             age = [sample['age'][n*self.move_length:(self.segment_length + n*self.move_length)]
+#                    for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
+#             seg = [sample['seg'][n*self.move_length:(self.segment_length + n*self.move_length)]
+#                    for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
+#             position = [sample['position'][n*self.move_length:(self.segment_length + n*self.move_length)]
+#                         for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
+#             att_mask = [sample['att_mask'][n*self.move_length:(self.segment_length + n*self.move_length)]
+#                         for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
+#
+#             mask = np.zeros((self.max_seq_length-self.segment_length)//self.move_length + 1)
+#             if sample['length'] <= self.segment_length:
+#                 num = 1
+#             else:
+#                 num = math.ceil((sample['length']-self.segment_length)/self.move_length) + 1
+#             mask[:num] = np.ones(num)
+#
+#         sample.update({'code': code, 'age': age, 'seg': seg, 'position': position,
+#                        'att_mask': att_mask, 'h_att_mask': mask})
+#
+#         return sample
+
 class FormatHierarchicalStructure(object):
     def __init__(self, segment_length, move_length, max_seq_length):
         self.segment_length = segment_length
@@ -151,29 +344,43 @@ class FormatHierarchicalStructure(object):
         self.max_seq_length = max_seq_length
 
     def __call__(self, sample):
-        if (self.max_seq_length-self.segment_length) % 50 != 0:
+        if (self.max_seq_length - self.segment_length) % 50 != 0:
             raise ValueError('Need to set up (max seqence length - segment length) % move length == 0')
         else:
-            code = [sample['code'][n*self.move_length:(self.segment_length + n*self.move_length)]
-                    for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-            age = [sample['age'][n*self.move_length:(self.segment_length + n*self.move_length)]
-                   for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-            seg = [sample['seg'][n*self.move_length:(self.segment_length + n*self.move_length)]
-                   for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-            position = [sample['position'][n*self.move_length:(self.segment_length + n*self.move_length)]
-                        for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-            att_mask = [sample['att_mask'][n*self.move_length:(self.segment_length + n*self.move_length)]
-                        for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
+            code = sample['code']
+            age = sample['age']
+            seg = sample['seg']
+            position = sample['position']
+            att_mask = sample['att_mask']
 
-            mask = np.zeros((self.max_seq_length-self.segment_length)//self.move_length + 1)
-            if sample['length'] <= self.segment_length:
-                num = 1
-            else:
-                num = math.ceil((sample['length']-self.segment_length)/self.move_length) + 1
-            mask[:num] = np.ones(num)
+            code_list = [code[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
+                         range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+            age_list = [age[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
+                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+            seg_list = [seg[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
+                        range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+            position_list = [position[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
+                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
+            att_mask_list = [att_mask[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
+                             range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
 
-        sample.update({'code': code, 'age': age, 'seg': seg, 'position': position,
-                       'att_mask': att_mask, 'h_att_mask': mask})
+            # mask = np.zeros(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))
+            # if sample['length'] <= self.segment_length:
+            #     num = 1
+            # else:
+            #     num = math.ceil((sample['length'] - self.segment_length) / self.move_length) + 1
+            # mask[:num] = np.ones(num)
+            mask = [1. if each[0] != 0 else 0. for each in code_list]
+
+        #             mask = np.zeros(math.ceil(self.max_seq_length-self.segment_length/self.move_length) + 1)
+        #             if sample['length'] <= self.segment_length:
+        #                 num = 1
+        #             else:
+        #                 num = math.ceil((sample['length']-self.segment_length)/self.move_length) + 1
+        #             mask[:num] = np.ones(num)
+
+        sample.update({'code': np.array(code_list), 'age': np.array(age_list), 'seg': np.array(seg_list),
+                       'position': np.array(position_list), 'att_mask': np.array(att_mask_list), 'h_att_mask': mask})
 
         return sample
 
