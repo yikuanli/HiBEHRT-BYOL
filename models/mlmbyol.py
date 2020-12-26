@@ -121,7 +121,14 @@ class SSLMLMBYOL(pl.LightningModule):
         #     optimizer,
         #     **self.params['scheduler']
         # )
-        return optimizer
+
+        scheduler = LinearWarmupCosineAnnealingLR(
+                optimizer,
+                **self.params['scheduler']
+            )
+
+        return [optimizer], [scheduler]
+
 
 
 class HiBEHRT(nn.Module):
