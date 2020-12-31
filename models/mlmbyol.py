@@ -33,6 +33,8 @@ class SSLMLMBYOL(pl.LightningModule):
         self.target_network = copy.deepcopy(self.online_network)
         self.weight_callback = BYOLMAWeightUpdate()
 
+
+
     def on_train_batch_end(self, outputs, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
         # Add callback for user automatically since it's key to BYOL weight update
         self.weight_callback.on_train_batch_end(self.trainer, self, outputs, batch, batch_idx, dataloader_idx)
@@ -104,17 +106,22 @@ class SSLMLMBYOL(pl.LightningModule):
         return total_loss
 
     def configure_optimizers(self):
-        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+        if self.params['optimiser'] == 'Adam':
+            no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 
-        optimizer_grouped_parameters = [
-            {'params': [p for n, p in list(self.named_parameters()) if not any(nd in n for nd in no_decay)],
-             'weight_decay': self.params['optimiser_params']['weight_decay']},
-            {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)], 'weight_decay': 0}
-        ]
+            optimizer_grouped_parameters = [
+                {'params': [p for n, p in list(self.named_parameters()) if not any(nd in n for nd in no_decay)],
+                 'weight_decay': self.params['optimiser_params']['weight_decay']},
+                {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)],
+                 'weight_decay': 0}
+            ]
 
-        optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
-                                               warmup=self.params['optimiser_params']['warmup_proportion'])
-
+            optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
+                                                   warmup=self.params['optimiser_params']['warmup_proportion'])
+        elif self.params['optimiser'] == 'SGD':
+            optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'])
+        else:
+            raise ValueError('the optimiser is not implimented')
         # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
         # scheduler = LinearWarmupCosineAnnealingLR(
