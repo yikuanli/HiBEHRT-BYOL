@@ -79,8 +79,8 @@ class EHR2VecFineTune(pl.LightningModule):
         if self.manual_valid:
             self.pred_list.append(self.sig(pred).cpu())
             self.target_list.append(label.cpu())
-        self.valid_prc(self.sig(pred), label)
-        self.valid_recall(self.sig(pred), label)
+        # self.valid_prc(self.sig(pred), label)
+        # self.valid_recall(self.sig(pred), label)
 
     def test_step(self, batch, batch_idx):
         loss, pred, label = self.shared_step(batch, batch_idx)
@@ -89,8 +89,8 @@ class EHR2VecFineTune(pl.LightningModule):
             self.pred_list.append(self.sig(pred).cpu())
             self.target_list.append(label.cpu())
 
-        self.valid_prc(self.sig(pred), label)
-        self.valid_recall(self.sig(pred), label)
+        # self.valid_prc(self.sig(pred), label)
+        # self.valid_recall(self.sig(pred), label)
 
     def configure_optimizers(self):
         # optimizer = eval(self.params['optimiser'])
@@ -116,8 +116,8 @@ class EHR2VecFineTune(pl.LightningModule):
 
     def validation_epoch_end(self, outs):
         # log epoch metric
-        self.log('valid_precision', self.valid_prc.compute())
-        self.log('valid_recall', self.valid_recall.compute())
+        # self.log('valid_precision', self.valid_prc.compute())
+        # self.log('valid_recall', self.valid_recall.compute())
 
         if self.manual_valid:
             label = torch.cat(self.target_list, dim=0).view(-1)
