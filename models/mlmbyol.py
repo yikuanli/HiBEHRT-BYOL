@@ -42,8 +42,8 @@ class SSLMLMBYOL(pl.LightningModule):
     # def on_train_batch_end(self, outputs: Any, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
     #     self.weight_callback.on_train_batch_end(self.trainer, self, batch, outputs,batch_idx, dataloader_idx)
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask, if_mask):
-        y, _, _ = self.online_network(record, age, seg, position, att_mask, h_att_mask, if_mask)
+    def forward(self, record, age, seg, position, att_mask, h_att_mask, bournilli_mask=None, if_mask=False):
+        y, _, _ = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask,  if_mask)
         return y
 
     def cosine_similarity(self, a, b, att_mask, bournilli_mask):
@@ -163,7 +163,7 @@ class HiBEHRT(nn.Module):
     #     if isinstance(module, nn.Linear) and module.bias is not None:
     #         module.bias.data.zero_()
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask):
+    def forward(self, record, age, seg, position, att_mask, h_att_mask, bournilli_mask=None, if_mask=False):
         # bournilli = Bernoulli(torch.ones_like(h_att_mask) * prob)
 
         output = self.embedding(record, age, seg, position)

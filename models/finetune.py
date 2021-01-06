@@ -43,9 +43,9 @@ class EHR2VecFineTune(pl.LightningModule):
 
         if ft:
             with torch.no_grad():
-                y = self.online_network(record, age, seg, position, att_mask, h_att_mask, if_mask)
+                y = self.online_network(record, age, seg, position, att_mask, h_att_mask, if_mask=if_mask)
         else:
-            y = self.online_network(record, age, seg, position, att_mask, h_att_mask, if_mask)
+            y = self.online_network(record, age, seg, position, att_mask, h_att_mask, if_mask=if_mask)
 
         y = self.pooler(y, encounter=False)
         y = self.classifier(y)
