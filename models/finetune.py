@@ -37,15 +37,15 @@ class EHR2VecFineTune(pl.LightningModule):
         self.pred_list = []
         self.target_list = []
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask):
+    def forward(self, record, age, seg, position, att_mask, h_att_mask, if_mask):
 
         ft = self.global_step < self.params['freeze_fine_tune']
 
         if ft:
             with torch.no_grad():
-                y = self.online_network(record, age, seg, position, att_mask, h_att_mask)
+                y = self.online_network(record, age, seg, position, att_mask, h_att_mask, if_mask)
         else:
-            y = self.online_network(record, age, seg, position, att_mask, h_att_mask)
+            y = self.online_network(record, age, seg, position, att_mask, h_att_mask, if_mask)
 
         y = self.pooler(y, encounter=False)
         y = self.classifier(y)
@@ -57,7 +57,7 @@ class EHR2VecFineTune(pl.LightningModule):
 
         loss_fct = nn.BCEWithLogitsLoss()
 
-        y = self.forward(record, age, seg, position, att_mask, h_att_mask)
+        y = self.forward(record, age, seg, position, att_mask, h_att_mask, if_mask=False)
 
         loss = loss_fct(y.view(-1, 1), label.view(-1, 1))
 

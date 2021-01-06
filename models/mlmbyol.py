@@ -42,8 +42,8 @@ class SSLMLMBYOL(pl.LightningModule):
     # def on_train_batch_end(self, outputs: Any, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
     #     self.weight_callback.on_train_batch_end(self.trainer, self, batch, outputs,batch_idx, dataloader_idx)
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask, prob):
-        y, _, _ = self.online_network(record, age, seg, position, att_mask, h_att_mask, prob)
+    def forward(self, record, age, seg, position, att_mask, h_att_mask, if_mask):
+        y, _, _ = self.online_network(record, age, seg, position, att_mask, h_att_mask, if_mask)
         return y
 
     def cosine_similarity(self, a, b, att_mask, bournilli_mask):
