@@ -6,6 +6,7 @@ import torch
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
 from utils.utils import load_obj
 import pytorch_pretrained_bert as Bert
+from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 
 
 class EHR2VecFineTune(pl.LightningModule):
@@ -39,7 +40,7 @@ class EHR2VecFineTune(pl.LightningModule):
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask, if_mask):
 
-        ft = self.global_step < self.params['freeze_fine_tune']
+        ft = self.current_epoch < self.params['freeze_fine_tune']
 
         if ft:
             with torch.no_grad():
@@ -108,11 +109,11 @@ class EHR2VecFineTune(pl.LightningModule):
 
         # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
-        # scheduler = LinearWarmupCosineAnnealingLR(
-        #     optimizer,
-        #     **self.params['scheduler']
-        # )
-        return optimizer
+        scheduler = LinearWarmupCosineAnnealingLR(
+            optimizer,
+            **self.params['scheduler']
+        )
+        return [optimizer], [scheduler]
 
     def validation_epoch_end(self, outs):
         # log epoch metric
