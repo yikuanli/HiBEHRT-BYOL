@@ -18,7 +18,7 @@ import random
 from utils.utils import load_obj
 
 
-class EHR2VecFineTune(pl.LightningModule):
+class EHR2VecAdaptorFineTune(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.params = params
