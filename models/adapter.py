@@ -32,7 +32,10 @@ class EHR2VecAdaptorFineTune(pl.LightningModule):
 
         self.online_network = SSLMLMBYOL(params)
         if params['checkpoint_feature'] is not None:
-            self.online_network = self.online_network.load_from_checkpoint(params['checkpoint_feature'], strict=False)
+            self.online_network = self.online_network.load_state_dict(
+                torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict'],
+                strict=False
+            )
 
         self.pooler = BertPooler(params)
         self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
