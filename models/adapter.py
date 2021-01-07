@@ -32,10 +32,12 @@ class EHR2VecAdaptorFineTune(pl.LightningModule):
 
         self.online_network = SSLMLMBYOL(params)
         if params['checkpoint_feature'] is not None:
-            self.online_network.load_state_dict(
+            incompatible = self.online_network.load_state_dict(
                 torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict'],
                 strict=False
             )
+
+            self.freeze_weight_except_keys(incompatible)
 
         self.pooler = BertPooler(params)
         self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
@@ -45,6 +47,13 @@ class EHR2VecAdaptorFineTune(pl.LightningModule):
 
         if self.manual_valid:
             self.reset_buffer_valid()
+
+
+
+    def freeze_weight_except_keys(self, keys):
+        for n, p in self.online_network.named_parameters():
+            if not any(nd in n for nd in keys):
+                p.requires_grad = False
 
     def reset_buffer_valid(self):
         self.pred_list = []
