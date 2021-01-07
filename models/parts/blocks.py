@@ -125,3 +125,88 @@ class BertPooler(nn.Module):
         pooled_output = self.dense(first_token_tensor)
         pooled_output = self.activation(pooled_output)
         return pooled_output
+
+
+class FeedforwardAdaptor(nn.Module):
+    def __init__(self, params):
+        super(FeedforwardAdaptor, self).__init__()
+        self.down_proj = nn.Linear(params['hidden_size'], params['adaptor_size'])
+        self.act_fn = Bert.modeling.ACT2FN['gelu']
+        self.up_proj = nn.Linear(params['adaptor_size'], params['hidden_size'])
+
+    def forward(self, hidden_state):
+        net = self.down_proj(hidden_state)
+        net = self.act_fn(net)
+        net = self.up_proj(net)
+
+        return hidden_state + net
+
+
+class BertSelfOutputAdaptor(nn.Module):
+    def __init__(self, params):
+        super(BertSelfOutputAdaptor, self).__init__()
+        self.dense = nn.Linear(params['hidden_size'], params['hidden_size'])
+        self.LayerNorm = BertLayerNorm(params['hidden_size'], eps=1e-12)
+        self.adaptor = FeedforwardAdaptor(params)
+        self.dropout = nn.Dropout(params['hidden_dropout_prob'])
+
+    def forward(self, hidden_states, input_tensor):
+        hidden_states = self.dense(hidden_states)
+        hidden_states = self.dropout(hidden_states)
+        hidden_states = self.adaptor(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+        return hidden_states
+
+
+class BertAttentionAdaptor(nn.Module):
+    def __init__(self, params):
+        super(BertAttentionAdaptor, self).__init__()
+        self.self = BertSelfAttention(params)
+        self.output = BertSelfOutputAdaptor(params)
+
+    def forward(self, input_tensor, attention_mask, encounter):
+        self_output = self.self(input_tensor, attention_mask, encounter)
+        attention_output = self.output(self_output, input_tensor)
+        return attention_output
+
+
+class BertOutputAdaptor(nn.Module):
+    def __init__(self, params):
+        super(BertOutputAdaptor, self).__init__()
+        self.dense = nn.Linear(params['intermediate_size'], params['hidden_size'])
+        self.LayerNorm = BertLayerNorm(params['hidden_size'], eps=1e-12)
+        self.dropout = nn.Dropout(params['hidden_dropout_prob'])
+        self.adaptor = FeedforwardAdaptor(params)
+
+    def forward(self, hidden_states, input_tensor):
+        hidden_states = self.dense(hidden_states)
+        hidden_states = self.dropout(hidden_states)
+        hidden_states = self.adaptor(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+        return hidden_states
+
+
+class BertLayerAdaptor(nn.Module):
+    def __init__(self, params):
+        super(BertLayerAdaptor, self).__init__()
+        self.attention = BertAttentionAdaptor(params)
+        self.intermediate = BertIntermediate(params)
+        self.output = BertOutputAdaptor(params)
+
+    def forward(self, hidden_states, attention_mask, encounter):
+        attention_output = self.attention(hidden_states, attention_mask, encounter)
+        intermediate_output = self.intermediate(attention_output)
+        layer_output = self.output(intermediate_output, attention_output)
+        return layer_output
+
+
+class BertEncoderAdaptor(nn.Module):
+    def __init__(self, params, num_layer):
+        super(BertEncoderAdaptor, self).__init__()
+        layer = BertLayerAdaptor(params)
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(num_layer)])
+
+    def forward(self, hidden_states, attention_mask, encounter):
+        for layer_module in self.layer:
+            hidden_states = layer_module(hidden_states, attention_mask, encounter)
+        return hidden_states
