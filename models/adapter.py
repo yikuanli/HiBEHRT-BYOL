@@ -32,7 +32,7 @@ class EHR2VecAdaptorFineTune(pl.LightningModule):
 
         self.online_network = SSLMLMBYOL(params)
         if params['checkpoint_feature'] is not None:
-            self.online_network = self.online_network.load_state_dict(
+            self.online_network.load_state_dict(
                 torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict'],
                 strict=False
             )
