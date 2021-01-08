@@ -36,6 +36,9 @@ class EHR2VecAdaptorFineTune(pl.LightningModule):
                 torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict'],
                 strict=False
             )
+
+            incompatible = incompatible[0] # got keys
+
             incompatible.append('pooler')
 
             self.freeze_weight_except_keys(incompatible)
