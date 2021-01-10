@@ -36,6 +36,8 @@ class EHR2VecFinetuneTest(pl.LightningModule):
 
             model_dict = self.feature_extractor.state_dict()
 
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+
             model_dict.update(pretrained_dict)
             # 3. load the new state dict
             self.feature_extractor.load_state_dict(model_dict)
