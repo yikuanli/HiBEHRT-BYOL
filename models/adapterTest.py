@@ -66,7 +66,7 @@ class EHR2VecAdapterTest(pl.LightningModule):
         self.apply(self.init_bert_weights)
 
     def freeze_weight_except_keys(self, keys):
-        for n, p in self.online_network.named_parameters():
+        for n, p in self.feature_extractor.named_parameters():
             if not any(nd in n for nd in keys):
                 p.requires_grad = False
 
