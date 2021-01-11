@@ -1,4 +1,4 @@
-from models.parts.blocks import BertPooler, BertEncoder, BertLayerNorm
+from models.parts.blocks import BertPooler, BertEncoderAdaptor, BertLayerNorm
 from models.parts.embeddings import Embedding
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -192,7 +192,7 @@ class EHR2VecAdapterTest(pl.LightningModule):
 class Extractor(nn.Module):
     def __init__(self, params):
         super(Extractor, self).__init__()
-        self.encoder = BertEncoder(params, params['extractor_num_layer'])
+        self.encoder = BertEncoderAdaptor(params, params['extractor_num_layer'])
         self.pooler = BertPooler(params)
 
     def forward(self, hidden_state, mask, encounter=True):
@@ -218,7 +218,7 @@ class Extractor(nn.Module):
 class Aggregator(nn.Module):
     def __init__(self, params):
         super(Aggregator, self).__init__()
-        self.encoder = BertEncoder(params, params['aggregator_num_layer'])
+        self.encoder = BertEncoderAdaptor(params, params['aggregator_num_layer'])
 
     def forward(self, hidden_state, mask, encounter=True):
         mask = mask.to(dtype=next(self.parameters()).dtype)
