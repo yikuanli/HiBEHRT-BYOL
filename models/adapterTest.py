@@ -149,8 +149,8 @@ class EHR2VecAdapterTest(pl.LightningModule):
         optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
                              warmup=self.params['optimiser_params']['warmup_proportion'])
 
-        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
+        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
         scheduler = LinearWarmupCosineAnnealingLR(
             optimizer,
             **self.params['scheduler']
