@@ -128,13 +128,17 @@ class SSLMLMBYOL(pl.LightningModule):
         #     optimizer,
         #     **self.params['scheduler']
         # )
+        if self.params['lr_strategy'] == 'warmup_cosine':
+            scheduler = LinearWarmupCosineAnnealingLR(
+                    optimizer,
+                    **self.params['scheduler']
+                )
 
-        scheduler = LinearWarmupCosineAnnealingLR(
-                optimizer,
-                **self.params['scheduler']
-            )
-
-        return [optimizer], [scheduler]
+            return [optimizer], [scheduler]
+        elif self.params['lr_strategy'] == 'fixed':
+            return optimizer
+        else:
+            raise ValueError('lr strategy not defined')
 
 
 
