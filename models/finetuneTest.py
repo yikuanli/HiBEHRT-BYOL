@@ -139,11 +139,14 @@ class EHR2VecFinetuneTest(pl.LightningModule):
 
         # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
-        # scheduler = LinearWarmupCosineAnnealingLR(
-        #     optimizer,
-        #     **self.params['scheduler']
-        # )
-        return optimizer
+        if self.params['lr_strategy'] == 'fixed':
+            return optimizer
+        elif self.params['lr_strategy'] == 'warmup_cosine':
+            scheduler = LinearWarmupCosineAnnealingLR(
+                optimizer,
+                **self.params['scheduler']
+            )
+            return [optimizer], [scheduler]
 
     def validation_epoch_end(self, outs):
         # log epoch metric
@@ -220,14 +223,22 @@ class Aggregator(nn.Module):
 class HiBEHRT(nn.Module):
     def __init__(self, params):
         super(HiBEHRT, self).__init__()
+        self.params = params
         self.embedding = Embedding(params)
         self.extractor = Extractor(params)
         self.aggregator = Aggregator(params)
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask):
 
-        output = self.embedding(record, age, seg, position)
-        output = self.extractor(output, att_mask, encounter=True)
+        ft = self.current_epoch < self.params['freeze_fine_tune']
+
+        if ft:
+            with torch.no_grad():
+                output = self.embedding(record, age, seg, position)
+                output = self.extractor(output, att_mask, encounter=True)
+        else:
+            output = self.embedding(record, age, seg, position)
+            output = self.extractor(output, att_mask, encounter=True)
 
         h = self.aggregator(output, h_att_mask, encounter=False)
         return h
