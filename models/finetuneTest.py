@@ -76,7 +76,7 @@ class EHR2VecFinetuneTest(pl.LightningModule):
         self.target_list = []
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask):
-        y = self.feature_extractor(record, age, seg, position, att_mask, h_att_mask)
+        y = self.feature_extractor(record, age, seg, position, att_mask, h_att_mask, self.current_epoch)
         y = self.pooler(y, encounter=False)
         y = self.classifier(y)
         return y
@@ -228,9 +228,9 @@ class HiBEHRT(nn.Module):
         self.extractor = Extractor(params)
         self.aggregator = Aggregator(params)
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask):
+    def forward(self, record, age, seg, position, att_mask, h_att_mask, epoch):
 
-        ft = self.current_epoch < self.params['freeze_fine_tune']
+        ft = epoch < self.params['freeze_fine_tune']
 
         if ft:
             with torch.no_grad():
