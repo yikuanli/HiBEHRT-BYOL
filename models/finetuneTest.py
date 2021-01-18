@@ -148,7 +148,6 @@ class EHR2VecFinetuneTest(pl.LightningModule):
             optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'], momentum=self.params['optimiser_params']['momentum'])
         else:
             raise ValueError('the optimiser is not implimented')
-        
 
         if self.params['lr_strategy'] == 'fixed':
             return optimizer
