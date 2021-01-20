@@ -16,6 +16,7 @@ from pytorch_lightning.metrics.functional.classification import average_precisio
 from utils.utils import load_obj
 from models.hibehrt import HiBEHRT
 from torch.optim import *
+from optim.tri_stage_lr_scheduler import TriStageLRScheduler
 
 
 class EHR2VecFinetuneTest(pl.LightningModule):
@@ -157,6 +158,12 @@ class EHR2VecFinetuneTest(pl.LightningModule):
                 **self.params['scheduler']
             )
             return [optimizer], [scheduler]
+        elif self.params['lr_strategy'] == 'stri_stage':
+            scheduler = LinearWarmupCosineAnnealingLR(
+                optimizer,
+                **self.params['scheduler']
+            )
+            return [optimizer], [scheduler]
 
     def validation_epoch_end(self, outs):
         # log epoch metric
@@ -183,9 +190,6 @@ class EHR2VecFinetuneTest(pl.LightningModule):
 
         PRC = average_precision(pred, target=label)
         ROC = auroc(pred, label)
-
-        print('average_precision', PRC)
-        print('auroc', ROC)
 
         return {'auprc': PRC, 'auroc': ROC}
 

@@ -67,7 +67,7 @@ def main():
     # train and evaluate model
     # trainer.fit(model, trainloader, evalloader)
     results = trainer.test(model, evalloader, ckpt_path=args['load_path'])
-    # print(results)
+    print(results)
 
 if __name__ == "__main__":
     main()
