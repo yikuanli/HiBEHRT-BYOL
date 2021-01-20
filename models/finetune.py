@@ -19,7 +19,7 @@ from torch.optim import *
 from optim.tri_stage_lr_scheduler import TriStageLRScheduler
 
 
-class EHR2VecFinetuneTest(pl.LightningModule):
+class EHR2VecFinetune(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.params = params
@@ -159,7 +159,7 @@ class EHR2VecFinetuneTest(pl.LightningModule):
             )
             return [optimizer], [scheduler]
         elif self.params['lr_strategy'] == 'stri_stage':
-            scheduler = LinearWarmupCosineAnnealingLR(
+            scheduler = TriStageLRScheduler(
                 optimizer,
                 **self.params['scheduler']
             )
