@@ -77,31 +77,32 @@ class SSLMLMBYOL(pl.LightningModule):
         loss_a = self.cosine_similarity(h1, z2, h_att_mask, bournilli_mask)
 
         # Image 2 to image 1 loss
-        # y1, z1, h1 = self.online_network(record_aug_2, age, seg, position, att_mask, h_att_mask, self.params['random_mask'])
-        # with torch.no_grad():
-        #     y2, z2, h2 = self.target_network(record_aug_1, age, seg, position, att_mask, h_att_mask, self.params['random_mask'])
+        y1, z1, h1 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=False)
+        with torch.no_grad():
+            y2, z2, h2 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=True)
         # L2 normalize
-        # loss_b = self.cosine_similarity(h1, z2, h_att_mask)
+        loss_b = self.cosine_similarity(h1, z2, h_att_mask, bournilli_mask)
 
         # Final loss
-        total_loss = loss_a
+        total_loss = loss_a + loss_b
 
-        return loss_a, total_loss
+        return loss_a, loss_b, total_loss
 
     def training_step(self, batch, batch_idx):
-        loss_a, total_loss = self.shared_step(batch, batch_idx)
+        loss_a, loss_b, total_loss = self.shared_step(batch, batch_idx)
 
         # log results
-        self.log_dict({'1_2_loss': loss_a, 'train_loss': total_loss})
+        self.log_dict({'1_2_loss': loss_a, 'train_loss': loss_a})
+        self.log_dict({'2_1_loss': loss_a, 'train_loss': loss_b})
         self.logger.experiment.add_scalar('Loss/Train', total_loss, self.global_step)
 
         return total_loss
 
     def validation_step(self, batch, batch_idx):
-        loss_a, total_loss = self.shared_step(batch, batch_idx)
+        loss_a, loss_b, total_loss = self.shared_step(batch, batch_idx)
 
         # log results
-        self.log_dict({'1_2_loss': loss_a, 'train_loss': total_loss})
+        # self.log_dict({'1_2_loss': loss_a, 'train_loss': total_loss})
 
         return total_loss
 
