@@ -210,3 +210,48 @@ class BertEncoderAdaptor(nn.Module):
         for layer_module in self.layer:
             hidden_states = layer_module(hidden_states, attention_mask, encounter)
         return hidden_states
+
+
+class BertOnlyMLMHead(nn.Module):
+    def __init__(self, params, bert_model_embedding_weights):
+        super(BertOnlyMLMHead, self).__init__()
+        self.predictions = BertLMPredictionHead(params, bert_model_embedding_weights)
+
+    def forward(self, sequence_output):
+        prediction_scores = self.predictions(sequence_output)
+        return prediction_scores
+
+
+class BertLMPredictionHead(nn.Module):
+    def __init__(self, params, bert_model_embedding_weights):
+        super(BertLMPredictionHead, self).__init__()
+        self.transform = BertPredictionHeadTransform(params)
+
+        # The output weights are the same as the input embeddings, but there is
+        # an output-only bias for each token.
+        self.decoder = nn.Linear(bert_model_embedding_weights.size(1),
+                                 bert_model_embedding_weights.size(0),
+                                 bias=False)
+        self.decoder.weight = bert_model_embedding_weights
+        self.bias = nn.Parameter(torch.zeros(bert_model_embedding_weights.size(0)))
+
+    def forward(self, hidden_states):
+        hidden_states = self.transform(hidden_states)
+        hidden_states = self.decoder(hidden_states) + self.bias
+        return hidden_states
+
+
+class BertPredictionHeadTransform(nn.Module):
+    def __init__(self, params):
+        super(BertPredictionHeadTransform, self).__init__()
+        self.dense = nn.Linear(params['hidden_size'], params['hidden_size'])
+
+        self.transform_act_fn = Bert.modeling.ACT2FN['relu']
+
+        self.LayerNorm = BertLayerNorm(params['hidden_size'], eps=1e-12)
+
+    def forward(self, hidden_states):
+        hidden_states = self.dense(hidden_states)
+        hidden_states = self.transform_act_fn(hidden_states)
+        hidden_states = self.LayerNorm(hidden_states)
+        return hidden_states
