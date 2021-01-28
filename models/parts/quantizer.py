@@ -46,7 +46,7 @@ class GumbelVectorQuantizer(nn.Module):
         var_dim = vq_dim // groups
         num_groups = groups if not combine_groups else 1
 
-        self.vars = nn.Parameter(torch.FloatTensor(1, num_groups * num_vars, var_dim))
+        self.vars = nn.Parameter(torch.randn(1, num_groups * num_vars, var_dim))
         nn.init.uniform_(self.vars)
 
         if weight_proj_depth > 1:
