@@ -49,7 +49,7 @@ class PesudoMLM(pl.LightningModule):
 
         # pesudo_label [B, T, 1], att_mask [B, T], bournilli_mask [B, T]
         pesudo_label[bournilli_mask == 1] = -1
-        pesudo_label[att_mask == 0] = -1
+        pesudo_label[h_att_mask == 0] = -1
 
         # pesudo label, output logits, and mask need to construct loss
         prediction_scores = self.cls(y) # [B, T, Codebook size]
