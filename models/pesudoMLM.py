@@ -32,7 +32,7 @@ class PesudoMLM(pl.LightningModule):
 
         self.feature_extractor = HiBEHRT(params)
 
-        self.cls = BertOnlyMLMHead(params, bert_model_embedding_weights=self.feature_extractor.input_quantizer.vars.squeeze(0))
+        self.cls = BertOnlyMLMHead(params, bert_model_embedding_weights=self.feature_extractor.input_quantizer.vars)
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask, bournilli_mask=None, if_mask=False):
         y, pesudo_label = self.feature_extractor(record, age, seg, position, att_mask, h_att_mask, bournilli_mask,  if_mask)

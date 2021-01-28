@@ -46,7 +46,8 @@ class GumbelVectorQuantizer(nn.Module):
         var_dim = vq_dim // groups
         num_groups = groups if not combine_groups else 1
 
-        self.vars = nn.Parameter(torch.randn(1, num_groups * num_vars, var_dim))
+        self.vars = nn.Parameter(torch.Tensor(num_groups * num_vars, var_dim))
+        # self.vars = nn.Parameter(torch.randn(1, num_groups * num_vars, var_dim))
         nn.init.uniform_(self.vars)
 
         if weight_proj_depth > 1:
@@ -103,8 +104,7 @@ class GumbelVectorQuantizer(nn.Module):
     def codebook(self):
         indices = self.get_codebook_indices()
         return (
-            self.vars.squeeze(0)
-            .index_select(0, indices)
+            self.vars.index_select(0, indices)
             .view(self.num_vars ** self.groups, -1)
         )
 
@@ -118,7 +118,7 @@ class GumbelVectorQuantizer(nn.Module):
         sample_idx = torch.randint(low=0, high=cb_size, size=(b * n,))
         indices = indices[sample_idx]
 
-        z = self.vars.squeeze(0).index_select(0, indices.flatten()).view(b, n, -1)
+        z = self.vars.index_select(0, indices.flatten()).view(b, n, -1)
         return z
 
     def to_codebook_index(self, indices):
@@ -171,7 +171,7 @@ class GumbelVectorQuantizer(nn.Module):
 
         x = x.view(bsz * tsz, -1)
 
-        vars = self.vars
+        vars = self.vars.unsqueeze(0)
         if self.combine_groups:
             vars = vars.repeat(1, self.groups, 1)
 
