@@ -76,12 +76,13 @@ class SSLMLMBYOL(pl.LightningModule):
             y2, z2, h2 = self.target_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=False)
         loss_a = self.cosine_similarity(h1, z2, h_att_mask, bournilli_mask)
 
-        # Image 2 to image 1 loss
-        y1, z1, h1 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=False)
-        with torch.no_grad():
-            y2, z2, h2 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=True)
-        # L2 normalize
-        loss_b = self.cosine_similarity(h1, z2, h_att_mask, bournilli_mask)
+        # # Image 2 to image 1 loss
+        # y1, z1, h1 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=False)
+        # with torch.no_grad():
+        #     y2, z2, h2 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=True)
+        # # L2 normalize
+        # loss_b = self.cosine_similarity(h1, z2, h_att_mask, bournilli_mask)
+        loss_b = 0
 
         # Final loss
         total_loss = loss_a + loss_b
