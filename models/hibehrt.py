@@ -14,6 +14,8 @@ from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
 from utils.utils import load_obj
+from torch.optim import *
+from optim.tri_stage_lr_scheduler import TriStageLRScheduler
 
 
 class EHR2Vec(pl.LightningModule):
@@ -112,24 +114,39 @@ class EHR2Vec(pl.LightningModule):
     def configure_optimizers(self):
         # optimizer = eval(self.params['optimiser'])
 
-        no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
+        if self.params['optimiser'] == 'Adam':
+            no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 
-        optimizer_grouped_parameters = [
-            {'params': [p for n, p in list(self.named_parameters()) if not any(nd in n for nd in no_decay)],
-             'weight_decay': self.params['optimiser_params']['weight_decay']},
-            {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)], 'weight_decay': 0}
-        ]
+            optimizer_grouped_parameters = [
+                {'params': [p for n, p in list(self.named_parameters()) if not any(nd in n for nd in no_decay)],
+                 'weight_decay': self.params['optimiser_params']['weight_decay']},
+                {'params': [p for n, p in list(self.named_parameters()) if any(nd in n for nd in no_decay)],
+                 'weight_decay': 0}
+            ]
 
-        optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
-                             warmup=self.params['optimiser_params']['warmup_proportion'])
+            optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters,
+                                                   lr=self.params['optimiser_params']['lr'],
+                                                   warmup=self.params['optimiser_params']['warmup_proportion'])
+        elif self.params['optimiser'] == 'SGD':
+            optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'],
+                            momentum=self.params['optimiser_params']['momentum'])
+        else:
+            raise ValueError('the optimiser is not implimented')
 
-        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
-
-        # scheduler = LinearWarmupCosineAnnealingLR(
-        #     optimizer,
-        #     **self.params['scheduler']
-        # )
-        return optimizer
+        if self.params['lr_strategy'] == 'fixed':
+            return optimizer
+        elif self.params['lr_strategy'] == 'warmup_cosine':
+            scheduler = LinearWarmupCosineAnnealingLR(
+                optimizer,
+                **self.params['scheduler']
+            )
+            return [optimizer], [scheduler]
+        elif self.params['lr_strategy'] == 'stri_stage':
+            scheduler = TriStageLRScheduler(
+                optimizer,
+                **self.params['scheduler']
+            )
+            return [optimizer], [scheduler]
 
     def validation_epoch_end(self, outs):
         # log epoch metric

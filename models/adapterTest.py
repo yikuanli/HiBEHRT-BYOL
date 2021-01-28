@@ -1,4 +1,4 @@
-from models.parts.blocks import BertPooler, BertEncoder, BertLayerNorm
+from models.parts.blocks import BertPooler, BertEncoderAdaptor, BertLayerNorm
 from models.parts.embeddings import Embedding
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -16,10 +16,9 @@ from pytorch_lightning.metrics.functional.classification import average_precisio
 from utils.utils import load_obj
 from models.hibehrt import HiBEHRT
 from torch.optim import *
-from optim.tri_stage_lr_scheduler import TriStageLRScheduler
 
 
-class EHR2VecFinetune(pl.LightningModule):
+class EHR2VecAdapterTest(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.params = params
@@ -40,9 +39,16 @@ class EHR2VecFinetune(pl.LightningModule):
 
             pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
 
-            model_dict.update(pretrained_dict)
-            # 3. load the new state dict
-            self.feature_extractor.load_state_dict(model_dict)
+            incompatible = self.feature_extractor.load_state_dict(
+                pretrained_dict,
+                strict=False
+            )
+
+            incompatible = incompatible[0]  # got keys
+
+            incompatible.append('pooler')
+
+            self.freeze_weight_except_keys(incompatible)
 
         self.pooler = BertPooler(params)
         self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
@@ -59,6 +65,11 @@ class EHR2VecFinetune(pl.LightningModule):
             self.reset_buffer_valid()
 
         self.apply(self.init_bert_weights)
+
+    def freeze_weight_except_keys(self, keys):
+        for n, p in self.feature_extractor.named_parameters():
+            if not any(nd in n for nd in keys):
+                p.requires_grad = False
 
     def init_bert_weights(self, module):
         """ Initialize the weights.
@@ -78,7 +89,7 @@ class EHR2VecFinetune(pl.LightningModule):
         self.target_list = []
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask):
-        y = self.feature_extractor(record, age, seg, position, att_mask, h_att_mask, self.current_epoch)
+        y = self.feature_extractor(record, age, seg, position, att_mask, h_att_mask)
         y = self.pooler(y, encounter=False)
         y = self.classifier(y)
         return y
@@ -128,10 +139,6 @@ class EHR2VecFinetune(pl.LightningModule):
     def configure_optimizers(self):
         # optimizer = eval(self.params['optimiser'])
 
-
-
-        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
-
         if self.params['optimiser'] == 'Adam':
             no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
 
@@ -154,12 +161,6 @@ class EHR2VecFinetune(pl.LightningModule):
             return optimizer
         elif self.params['lr_strategy'] == 'warmup_cosine':
             scheduler = LinearWarmupCosineAnnealingLR(
-                optimizer,
-                **self.params['scheduler']
-            )
-            return [optimizer], [scheduler]
-        elif self.params['lr_strategy'] == 'stri_stage':
-            scheduler = TriStageLRScheduler(
                 optimizer,
                 **self.params['scheduler']
             )
@@ -191,13 +192,16 @@ class EHR2VecFinetune(pl.LightningModule):
         PRC = average_precision(pred, target=label)
         ROC = auroc(pred, label)
 
+        print('average_precision', PRC)
+        print('auroc', ROC)
+
         return {'auprc': PRC, 'auroc': ROC}
 
 
 class Extractor(nn.Module):
     def __init__(self, params):
         super(Extractor, self).__init__()
-        self.encoder = BertEncoder(params, params['extractor_num_layer'])
+        self.encoder = BertEncoderAdaptor(params, params['extractor_num_layer'])
         self.pooler = BertPooler(params)
 
     def forward(self, hidden_state, mask, encounter=True):
@@ -223,7 +227,7 @@ class Extractor(nn.Module):
 class Aggregator(nn.Module):
     def __init__(self, params):
         super(Aggregator, self).__init__()
-        self.encoder = BertEncoder(params, params['aggregator_num_layer'])
+        self.encoder = BertEncoderAdaptor(params, params['aggregator_num_layer'])
 
     def forward(self, hidden_state, mask, encounter=True):
         mask = mask.to(dtype=next(self.parameters()).dtype)
@@ -237,22 +241,14 @@ class Aggregator(nn.Module):
 class HiBEHRT(nn.Module):
     def __init__(self, params):
         super(HiBEHRT, self).__init__()
-        self.params = params
         self.embedding = Embedding(params)
         self.extractor = Extractor(params)
         self.aggregator = Aggregator(params)
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask, epoch):
+    def forward(self, record, age, seg, position, att_mask, h_att_mask):
 
-        ft = epoch < self.params['freeze_fine_tune']
-
-        if ft:
-            with torch.no_grad():
-                output = self.embedding(record, age, seg, position)
-                output = self.extractor(output, att_mask, encounter=True)
-        else:
-            output = self.embedding(record, age, seg, position)
-            output = self.extractor(output, att_mask, encounter=True)
+        output = self.embedding(record, age, seg, position)
+        output = self.extractor(output, att_mask, encounter=True)
 
         h = self.aggregator(output, h_att_mask, encounter=False)
         return h

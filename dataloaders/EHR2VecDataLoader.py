@@ -32,6 +32,10 @@ class EHR2VecDset(Dataset):
         self.data = dataset
         self._compose = transforms.Compose([
             transform.MordalitySelection(params['mordality']),
+            transform.RecordsAugment(aug_prob=params['aug_prob'],
+                                     mask_prob=params['mask_prob'],
+                                     drop_prob=params['drop_prob'],
+                                     is_train=params['is_train']),
             transform.TruncateSeqence(params['max_seq_length']),
             transform.CreateSegandPosition(),
             # transform.RemoveSEP(),

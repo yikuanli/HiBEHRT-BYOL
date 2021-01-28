@@ -219,6 +219,47 @@ class CalibrateSegmentation(object):
         return sample
 
 
+class RecordsAugment(object):
+    def __init__(self, aug_prob=0.25, mask_prob=0.05, drop_prob=0.05, is_train=False):
+        self.aug_prob = aug_prob
+        self.mask_prob = mask_prob
+        self.drop_prob = drop_prob
+        self.is_train = is_train
+
+    def __call__(self, sample):
+        if self.is_train:
+            code = sample['code']
+            age = sample['age']
+
+            seed = random.random()
+
+            if seed < self.aug_prob:
+                # for augmentation 25% mask, 25% replace as UNK, and 50% drop
+                code_list = []
+                age_list = []
+                for i in range(len(code)):
+                    if code[i] != 'SEP':
+                        seed = random.random()
+                        if seed < self.mask_prob:
+                            code_list.append('MASK')
+                            age_list.append(age[i])
+                        elif (seed >= self.mask_prob) and (seed <= self.mask_prob + self.drop_prob):
+                            pass
+                        else:
+                            code_list.append(code[i])
+                            age_list.append(age[i])
+                    else:
+                        code_list.append(code[i])
+                        age_list.append(age[i])
+
+                code = code_list
+                age = age_list
+
+            sample.update({'coe': np.array(code),
+                           'age': np.array(age)})
+        return sample
+
+
 class TokenAgeSegPosition2idx(object):
     def __init__(self, token_dict_path, age_dict_path):
         self.token2idx = load_obj(token_dict_path)['token2idx']
@@ -401,11 +442,11 @@ class EHRAugmentation(object):
             return np.array(record_list)
 
         strategy = ['random_mask', 'mask_diag_med', 'mask_rest']
-        p = [0.5, 0.3, 0.2]
+        p = [1, 0, 0]
         choice = np.random.choice(strategy, p=p)
 
         if choice == 'random_mask':
-            code = random_mask(code, category=[], p=0.15)
+            code = random_mask(code, category=['SEP'], p=0.2)
         elif choice == 'mask_diag_med':
             code = random_mask(code, category=['TES', 'BMI', 'BPL', 'BPH', 'SMO', 'ALC'], p=0.5)
         else:

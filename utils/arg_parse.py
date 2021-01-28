@@ -13,4 +13,6 @@ def arg_paser():
     # update able params
     parser.add_argument("--update_params", default={}, type=yaml.load, help='Update the parameters dictionary.')
 
+    parser.add_argument('--load_path', default=None)
+
     return parser.parse_args()
