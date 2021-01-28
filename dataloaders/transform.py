@@ -385,7 +385,7 @@ class FormatHierarchicalStructure(object):
         self.max_seq_length = max_seq_length
 
     def __call__(self, sample):
-        if (self.max_seq_length - self.segment_length) % 50 != 0:
+        if (self.max_seq_length - self.segment_length) % self.move_length != 0:
             raise ValueError('Need to set up (max seqence length - segment length) % move length == 0')
         else:
             code = sample['code']
@@ -420,8 +420,8 @@ class FormatHierarchicalStructure(object):
         #                 num = math.ceil((sample['length']-self.segment_length)/self.move_length) + 1
         #             mask[:num] = np.ones(num)
 
-        sample.update({'code': np.array(code_list), 'age': np.array(age_list), 'seg': np.array(seg_list),
-                       'position': np.array(position_list), 'att_mask': np.array(att_mask_list), 'h_att_mask': mask})
+        sample.update({'code': code_list, 'age': age_list, 'seg': seg_list,
+                       'position': position_list, 'att_mask': att_mask_list, 'h_att_mask': mask})
 
         return sample
 
