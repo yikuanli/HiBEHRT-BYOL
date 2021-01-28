@@ -15,6 +15,7 @@ class SSLDset(Dataset):
             transform.RandomKeepDiagMed(),
             transform.RandomCropSequence(p=params['p'], seq_threshold=params['seq_threshold']),
             transform.TruncateSeqence(params['max_seq_length']),
+            transform.EHRAugmentation(),
             transform.CreateSegandPosition(),
             # transform.RemoveSEP(),
             transform.TokenAgeSegPosition2idx(params['token_dict_path'], params['age_dict_path']),

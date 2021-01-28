@@ -442,11 +442,11 @@ class EHRAugmentation(object):
             return np.array(record_list)
 
         strategy = ['random_mask', 'mask_diag_med', 'mask_rest']
-        p = [0.5, 0.3, 0.2]
+        p = [1, 0, 0]
         choice = np.random.choice(strategy, p=p)
 
         if choice == 'random_mask':
-            code = random_mask(code, category=[], p=0.15)
+            code = random_mask(code, category=['SEP'], p=0.2)
         elif choice == 'mask_diag_med':
             code = random_mask(code, category=['TES', 'BMI', 'BPL', 'BPH', 'SMO', 'ALC'], p=0.5)
         else:
