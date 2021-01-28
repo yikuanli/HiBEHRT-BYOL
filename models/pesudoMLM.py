@@ -48,7 +48,6 @@ class PesudoMLM(pl.LightningModule):
         y, pesudo_label = self.feature_extractor(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=True)
 
         # pesudo_label [B, T, 1], att_mask [B, T], bournilli_mask [B, T]
-        pesudo_label = pesudo_label.squeeze(-1)
         pesudo_label[bournilli_mask == 1] = -1
         pesudo_label[att_mask == 0] = -1
 
