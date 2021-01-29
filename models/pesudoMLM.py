@@ -60,6 +60,7 @@ class PesudoMLM(pl.LightningModule):
         return masked_lm_loss
 
     def training_step(self, batch, batch_idx):
+        self.feature_extractor.input_quantizer.set_num_updates(self.global_step)
         loss = self.shared_step(batch, batch_idx)
 
         self.logger.experiment.add_scalar('Loss/Train', loss, self.global_step)
