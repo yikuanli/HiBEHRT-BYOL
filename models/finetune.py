@@ -32,18 +32,6 @@ class EHR2VecFinetune(pl.LightningModule):
 
         self.feature_extractor = HiBEHRT(params)
 
-        if params['checkpoint_feature'] is not None:
-            pretrained_dict = torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict']
-            pretrained_dict = {'.'.join(k.split('.')[1:]): v for k,v in pretrained_dict.items() if k.split('.')[0] == 'online_network'}
-
-            model_dict = self.feature_extractor.state_dict()
-
-            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-
-            model_dict.update(pretrained_dict)
-            # 3. load the new state dict
-            self.feature_extractor.load_state_dict(model_dict)
-
         self.pooler = BertPooler(params)
         self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
 
@@ -58,7 +46,20 @@ class EHR2VecFinetune(pl.LightningModule):
         if self.manual_valid:
             self.reset_buffer_valid()
 
-        # self.apply(self.init_bert_weights)
+        self.apply(self.init_bert_weights)
+
+        # load pretrained weight in the end
+        if params['checkpoint_feature'] is not None:
+            pretrained_dict = torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict']
+            pretrained_dict = {'.'.join(k.split('.')[1:]): v for k,v in pretrained_dict.items() if k.split('.')[0] == 'online_network'}
+
+            model_dict = self.feature_extractor.state_dict()
+
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+
+            model_dict.update(pretrained_dict)
+            # 3. load the new state dict
+            self.feature_extractor.load_state_dict(model_dict)
 
     def init_bert_weights(self, module):
         """ Initialize the weights.
