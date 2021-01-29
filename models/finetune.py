@@ -14,7 +14,7 @@ from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
 from utils.utils import load_obj
-from models.hibehrt import HiBEHRT
+# from models.hibehrt import HiBEHRT
 from torch.optim import *
 from optim.tri_stage_lr_scheduler import TriStageLRScheduler
 
@@ -58,7 +58,7 @@ class EHR2VecFinetune(pl.LightningModule):
         if self.manual_valid:
             self.reset_buffer_valid()
 
-        self.apply(self.init_bert_weights)
+        # self.apply(self.init_bert_weights)
 
     def init_bert_weights(self, module):
         """ Initialize the weights.
