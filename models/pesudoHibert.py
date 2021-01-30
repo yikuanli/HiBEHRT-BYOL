@@ -101,7 +101,7 @@ class PesudoHibert(pl.LightningModule):
         if self.params['temp'] is not None:
             self.feature_extractor.input_quantizer.curr_temp = self.params['temp']
         else:
-            self.feature_extractor.input_quantizer.set_num_updates(self.global_step)
+            self.feature_extractor.input_quantizer.set_num_updates(self.current_epoch)
 
         loss, _, _ = self.shared_step(batch, batch_idx)
 
