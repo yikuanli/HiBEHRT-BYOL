@@ -103,6 +103,8 @@ class PesudoHibert(pl.LightningModule):
         else:
             self.feature_extractor.input_quantizer.set_num_updates(self.current_epoch)
 
+        self.log('temp', self.feature_extractor.input_quantizer.curr_temp)
+
         loss, _, _ = self.shared_step(batch, batch_idx)
 
         self.log("train_loss", loss)
