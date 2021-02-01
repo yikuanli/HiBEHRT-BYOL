@@ -89,7 +89,7 @@ class PesudoMLM(pl.LightningModule):
             optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
                                                    warmup=self.params['optimiser_params']['warmup_proportion'])
         elif self.params['optimiser'] == 'SGD':
-            optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'])
+            optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'], momentum=self.params['optimiser_params']['momentum'])
         else:
             raise ValueError('the optimiser is not implimented')
         # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
