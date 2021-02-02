@@ -50,6 +50,7 @@ class EHR2VecFinetune(pl.LightningModule):
 
         # load pretrained weight in the end
         if params['checkpoint_feature'] is not None:
+            print('load pre-trained model')
             pretrained_dict = torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict']
             pretrained_dict = {'.'.join(k.split('.')[1:]): v for k,v in pretrained_dict.items() if k.split('.')[0] == 'online_network'}
 
