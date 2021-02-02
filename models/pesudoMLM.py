@@ -64,6 +64,7 @@ class PesudoMLM(pl.LightningModule):
         loss = self.shared_step(batch, batch_idx)
 
         self.logger.experiment.add_scalar('Loss/Train', loss, self.global_step)
+        self.logger.experiment.add_scalar('epoch', self.current_epoch, self.global_step)
         self.logger.experiment.add_scalar('temp', self.feature_extractor.input_quantizer.curr_temp, self.global_step)
 
         return loss
