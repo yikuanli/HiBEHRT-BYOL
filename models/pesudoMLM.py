@@ -63,11 +63,15 @@ class PesudoMLM(pl.LightningModule):
         if self.params['temp'] is not None:
             self.feature_extractor.input_quantizer.curr_temp = self.params['temp']
         else:
-            print('current epoch:', self.current_epoch)
-            print('max:', self.feature_extractor.input_quantizer.max_temp)
-            print('decay rate:', self.feature_extractor.input_quantizer.temp_decay)
-            
-            self.feature_extractor.input_quantizer.set_num_updates(self.current_epoch)
+            print('max: ', self.feature_extractor.input_quantizer.max_temp)
+            print('min: ', self.feature_extractor.input_quantizer.min_temp)
+
+            temp = self.feature_extractor.input_quantizer.set_num_updates(self.current_epoch)
+            print('temp:', temp)
+            self.feature_extractor.input_quantizer.curr_temp = temp
+
+
+
 
         self.logger.experiment.add_scalar('epoch', self.current_epoch, self.global_step)
         self.logger.experiment.add_scalar('temp', self.feature_extractor.input_quantizer.curr_temp, self.global_step)
