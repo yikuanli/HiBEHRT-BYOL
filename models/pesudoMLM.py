@@ -59,13 +59,21 @@ class PesudoMLM(pl.LightningModule):
 
         return masked_lm_loss
 
+    def on_train_epoch_start(self):
+        if self.params['temp'] is not None:
+            self.feature_extractor.input_quantizer.curr_temp = self.params['temp']
+        else:
+            self.feature_extractor.input_quantizer.set_num_updates(self.current_epoch)
+
+        self.logger.experiment.add_scalar('epoch', self.current_epoch, self.global_step)
+        self.logger.experiment.add_scalar('temp', self.feature_extractor.input_quantizer.curr_temp, self.global_step)
+
     def training_step(self, batch, batch_idx):
-        self.feature_extractor.input_quantizer.set_num_updates(self.current_epoch)
+
         loss = self.shared_step(batch, batch_idx)
 
         self.logger.experiment.add_scalar('Loss/Train', loss, self.global_step)
-        self.logger.experiment.add_scalar('epoch', self.current_epoch, self.global_step)
-        self.logger.experiment.add_scalar('temp', self.feature_extractor.input_quantizer.curr_temp, self.global_step)
+
 
         return loss
 
