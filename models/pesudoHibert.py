@@ -270,11 +270,11 @@ class HiBEHRT(nn.Module):
             with torch.no_grad():
                 output = self.embedding(record, age, seg, position)
                 output = self.extractor(output, att_mask, encounter=True)
+                output, pesudo_label = self.input_quantizer(output)
         else:
             output = self.embedding(record, age, seg, position)
             output = self.extractor(output, att_mask, encounter=True)
-
-        output, pesudo_label = self.input_quantizer(output)
+            output, pesudo_label = self.input_quantizer(output)
 
         h = self.aggregator(output, h_att_mask, encounter=False)
         return h
