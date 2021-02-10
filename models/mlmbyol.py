@@ -116,7 +116,8 @@ class SSLMLMBYOL(pl.LightningModule):
             ]
 
             optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
-                                                   warmup=self.params['optimiser_params']['warmup_proportion'])
+                                                   warmup=self.params['optimiser_params']['warmup_proportion'],
+                                                   e=self.params['optimiser_params']['epsilon'])
         elif self.params['optimiser'] == 'SGD':
             optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'], momentum=self.params['optimiser_params']['momentum'])
         else:
