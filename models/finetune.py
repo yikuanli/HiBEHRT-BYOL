@@ -38,6 +38,7 @@ class EHR2VecFinetune(pl.LightningModule):
         self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
         self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
         self.f1 = pl.metrics.classification.F1(num_classes=1)
+        self.nll = torch.nn.BCELoss()
 
         self.sig = nn.Sigmoid()
 
@@ -179,11 +180,13 @@ class EHR2VecFinetune(pl.LightningModule):
 
             auprc_score = average_precision(pred, target=label)
             auroc_score = auroc(pred, label)
+            nll = self.nll(pred, label)
 
-            print('epoch : {} AUROC: {} AUPRC: {}'.format(self.current_epoch,auroc_score, auprc_score ))
+            print('epoch : {} AUROC: {} AUPRC: {} NLL: {}'.format(self.current_epoch,auroc_score, auprc_score, nll))
 
             self.log('average_precision', auprc_score)
             self.log('auroc', auroc_score)
+            self.log('nll', nll)
             self.reset_buffer_valid()
 
     def test_epoch_end(self, outs):
