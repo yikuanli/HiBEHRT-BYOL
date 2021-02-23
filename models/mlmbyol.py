@@ -90,8 +90,8 @@ class SSLMLMBYOL(pl.LightningModule):
         loss_a, loss_b, total_loss = self.shared_step(batch, batch_idx)
 
         # log results
-        self.log_dict({'1_2_loss': loss_a, 'train_loss': loss_a})
-        self.log_dict({'2_1_loss': loss_a, 'train_loss': loss_b})
+        self.log_dict({'1_2_loss': loss_a})
+        self.log_dict({'2_1_loss': loss_b})
         self.logger.experiment.add_scalar('Loss/Train', total_loss, self.global_step)
 
         return total_loss
