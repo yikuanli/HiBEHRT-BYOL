@@ -92,6 +92,7 @@ def BEHRTDataLoader(params):
             data = data.reset_index(drop=True)
 
         print('data size:', len(data))
+        print('percentage of positive samples:', len(data[data['label'] == 1]) / len(data))
 
         dset = EHR2VecDset(dataset=data, params=params)
 
