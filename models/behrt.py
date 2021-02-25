@@ -64,8 +64,8 @@ class BEHRT2Vec(pl.LightningModule):
         self.pred_list = []
         self.target_list = []
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask):
-        y = self.feature_extractor(record, age, seg, position, att_mask, h_att_mask)
+    def forward(self, record, age, seg, position, att_mask):
+        y = self.feature_extractor(record, age, seg, position, att_mask)
         y = self.pooler(y, encounter=False)
         y = self.classifier(y)
         return y
