@@ -91,6 +91,11 @@ def BEHRTDataLoader(params):
             data = data[data['len']>params['min_len']]
             data = data.reset_index(drop=True)
 
+        if params['min_year'] is not None:
+            data['duration'] = data.age.apply(lambda x: int(x[-1])-int(x[0]))
+            data = data[data['duration'] > params['min_year']]
+            data = data.reset_index(drop=True)
+
         print('data size:', len(data))
         print('percentage of positive samples:', len(data[data['label'] == 1]) / len(data))
 
