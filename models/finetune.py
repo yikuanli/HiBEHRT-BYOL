@@ -246,6 +246,7 @@ class HiBEHRT(nn.Module):
         self.embedding = Embedding(params)
         self.extractor = Extractor(params)
         self.aggregator = Aggregator(params)
+        self.params = params
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask, epoch):
 
@@ -258,6 +259,10 @@ class HiBEHRT(nn.Module):
         else:
             output = self.embedding(record, age, seg, position)
             output = self.extractor(output, att_mask, encounter=True)
+
+        timestep_mask = Bernoulli(torch.ones_like(h_att_mask) * self.params['timestep_mask']).sample()
+
+        output = output * timestep_mask.unsqueeze(-1)
 
         h = self.aggregator(output, h_att_mask, encounter=False)
         return h
