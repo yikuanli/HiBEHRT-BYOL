@@ -42,10 +42,10 @@ class EHR2VecDset(Dataset):
             transform.TokenAgeSegPosition2idx(params['token_dict_path'], params['age_dict_path']),
             transform.RetriveSeqLengthAndPadding(params['max_seq_length']),
             transform.FormatAttentionMask(params['max_seq_length']),
-            transform.FormatHierarchicalStructure(params['segment_length'], params['move_length'],
-                                                  params['max_seq_length']),
-            transform.CalibrateHierarchicalPosition(),
-            transform.CalibrateSegmentation()
+            # transform.FormatHierarchicalStructure(params['segment_length'], params['move_length'],
+            #                                       params['max_seq_length']),
+            # transform.CalibrateHierarchicalPosition(),
+            # transform.CalibrateSegmentation()
         ])
 
     def __getitem__(self, index):
@@ -66,14 +66,14 @@ class EHR2VecDset(Dataset):
                 'seg': torch.LongTensor(sample['seg']),
                 'position': torch.LongTensor(sample['position']),
                 'att_mask': torch.LongTensor(sample['att_mask']),
-                'h_att_mask': torch.LongTensor(sample['h_att_mask']),
+                # 'h_att_mask': torch.LongTensor(sample['h_att_mask']),
                 'label': torch.FloatTensor([sample['label']])}
 
     def __len__(self):
         return len(self.data)
 
 
-def EHR2VecDataLoader(params):
+def BEHRTDataLoader(params):
     if params['data_path'] is not None:
         data = pd.read_parquet(params['data_path'])
         if 'fraction' in params:
@@ -97,8 +97,7 @@ def EHR2VecDataLoader(params):
             data = data.reset_index(drop=True)
 
         print('data size:', len(data))
-        print('percentage of positive samples:', len(data[data['label'] == 1])/len(data))
-
+        print('percentage of positive samples:', len(data[data['label'] == 1]) / len(data))
 
         dset = EHR2VecDset(dataset=data, params=params)
 

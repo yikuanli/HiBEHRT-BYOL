@@ -1,4 +1,4 @@
-from models.parts.blocks import BertPooler, BertEncoderAdaptor, BertLayerNorm
+from models.parts.blocks import BertPooler, BertEncoder, BertLayerNorm
 from models.parts.embeddings import Embedding
 import torch.nn as nn
 import pytorch_lightning as pl
@@ -14,11 +14,11 @@ from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
 from utils.utils import load_obj
-from models.hibehrt import HiBEHRT
 from torch.optim import *
+from optim.tri_stage_lr_scheduler import TriStageLRScheduler
 
 
-class EHR2VecAdapterTest(pl.LightningModule):
+class BEHRT2Vec(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.params = params
@@ -29,33 +29,14 @@ class EHR2VecAdapterTest(pl.LightningModule):
 
         self.save_hyperparameters()
 
-        self.feature_extractor = HiBEHRT(params)
-
-        if params['checkpoint_feature'] is not None:
-            pretrained_dict = torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict']
-            pretrained_dict = {'.'.join(k.split('.')[1:]): v for k,v in pretrained_dict.items() if k.split('.')[0] == 'online_network'}
-
-            model_dict = self.feature_extractor.state_dict()
-
-            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
-
-            incompatible = self.feature_extractor.load_state_dict(
-                pretrained_dict,
-                strict=False
-            )
-
-            incompatible = incompatible[0]  # got keys
-
-            incompatible.append('pooler')
-
-            self.freeze_weight_except_keys(incompatible)
-
+        self.feature_extractor = BEHRT(params)
         self.pooler = BertPooler(params)
         self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
 
         self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
         self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
         self.f1 = pl.metrics.classification.F1(num_classes=1)
+        self.nll = torch.nn.BCELoss()
 
         self.sig = nn.Sigmoid()
 
@@ -65,11 +46,6 @@ class EHR2VecAdapterTest(pl.LightningModule):
             self.reset_buffer_valid()
 
         self.apply(self.init_bert_weights)
-
-    def freeze_weight_except_keys(self, keys):
-        for n, p in self.feature_extractor.named_parameters():
-            if not any(nd in n for nd in keys):
-                p.requires_grad = False
 
     def init_bert_weights(self, module):
         """ Initialize the weights.
@@ -88,19 +64,19 @@ class EHR2VecAdapterTest(pl.LightningModule):
         self.pred_list = []
         self.target_list = []
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask):
-        y = self.feature_extractor(record, age, seg, position, att_mask, h_att_mask)
+    def forward(self, record, age, seg, position, att_mask):
+        y = self.feature_extractor(record, age, seg, position, att_mask)
         y = self.pooler(y, encounter=False)
         y = self.classifier(y)
         return y
 
     def shared_step(self, batch, batch_idx):
-        record,  age, seg, position, att_mask, h_att_mask, label = \
-            batch['code'], batch['age'], batch['seg'], batch['position'], batch['att_mask'], batch['h_att_mask'], batch['label']
+        record,  age, seg, position, att_mask, label = \
+            batch['code'], batch['age'], batch['seg'], batch['position'], batch['att_mask'], batch['label']
 
         loss_fct = nn.BCEWithLogitsLoss()
 
-        y = self.forward(record, age, seg, position, att_mask, h_att_mask)
+        y = self.forward(record, age, seg, position, att_mask)
 
         loss = loss_fct(y.view(-1, 1), label.view(-1, 1))
 
@@ -153,7 +129,8 @@ class EHR2VecAdapterTest(pl.LightningModule):
                                                    lr=self.params['optimiser_params']['lr'],
                                                    warmup=self.params['optimiser_params']['warmup_proportion'])
         elif self.params['optimiser'] == 'SGD':
-            optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'], momentum=self.params['optimiser_params']['momentum'])
+            optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'],
+                            momentum=self.params['optimiser_params']['momentum'])
         else:
             raise ValueError('the optimiser is not implimented')
 
@@ -161,6 +138,12 @@ class EHR2VecAdapterTest(pl.LightningModule):
             return optimizer
         elif self.params['lr_strategy'] == 'warmup_cosine':
             scheduler = LinearWarmupCosineAnnealingLR(
+                optimizer,
+                **self.params['scheduler']
+            )
+            return [optimizer], [scheduler]
+        elif self.params['lr_strategy'] == 'stri_stage':
+            scheduler = TriStageLRScheduler(
                 optimizer,
                 **self.params['scheduler']
             )
@@ -178,10 +161,12 @@ class EHR2VecAdapterTest(pl.LightningModule):
 
             auprc_score = average_precision(pred, target=label)
             auroc_score = auroc(pred, label)
+            nll = self.nll(pred, label)
 
-            print('epoch : {} AUROC: {} AUPRC: {}'.format(self.current_epoch,auroc_score, auprc_score ))
+            print('epoch : {} AUROC: {} AUPRC: {} NLL: {}'.format(self.current_epoch, auroc_score, auprc_score, nll))
 
             self.log('average_precision', auprc_score)
+            self.log('nll', nll)
             self.log('auroc', auroc_score)
             self.reset_buffer_valid()
 
@@ -198,36 +183,10 @@ class EHR2VecAdapterTest(pl.LightningModule):
         return {'auprc': PRC, 'auroc': ROC}
 
 
-class Extractor(nn.Module):
-    def __init__(self, params):
-        super(Extractor, self).__init__()
-        self.encoder = BertEncoderAdaptor(params, params['extractor_num_layer'])
-        self.pooler = BertPooler(params)
-
-    def forward(self, hidden_state, mask, encounter=True):
-        mask = mask.to(dtype=next(self.parameters()).dtype)
-
-        attention_mast = mask.unsqueeze(2).unsqueeze(3)
-
-        attention_mast = (1.0 - attention_mast) * -10000.0
-
-        # encode_visit = []
-        # for i in range(hidden_state.size(1)):
-        #     encoded_layer = self.encoder(hidden_state[:, i, :, :], attention_mast[:, i, :], encounter)
-        #     encoded_layer = self.pooler(encoded_layer, encounter)
-        #     encode_visit.append(encoded_layer)
-        # encode_visit = torch.stack(encode_visit, dim=1)
-        encoded_layer = self.encoder(hidden_state, attention_mast, encounter)
-        encoded_layer = self.pooler(encoded_layer, encounter)
-
-        encode_visit = encoded_layer
-        return encode_visit  # [batch * seg_len * Dim]
-
-
 class Aggregator(nn.Module):
     def __init__(self, params):
         super(Aggregator, self).__init__()
-        self.encoder = BertEncoderAdaptor(params, params['aggregator_num_layer'])
+        self.encoder = BertEncoder(params, params['aggregator_num_layer'])
 
     def forward(self, hidden_state, mask, encounter=True):
         mask = mask.to(dtype=next(self.parameters()).dtype)
@@ -238,17 +197,15 @@ class Aggregator(nn.Module):
         return encoded_layer  # batch seq_len dim
 
 
-class HiBEHRT(nn.Module):
+class BEHRT(nn.Module):
     def __init__(self, params):
-        super(HiBEHRT, self).__init__()
+        super(BEHRT, self).__init__()
         self.embedding = Embedding(params)
-        self.extractor = Extractor(params)
         self.aggregator = Aggregator(params)
 
-    def forward(self, record, age, seg, position, att_mask, h_att_mask):
+    def forward(self, record, age, seg, position, att_mask):
 
         output = self.embedding(record, age, seg, position)
-        output = self.extractor(output, att_mask, encounter=True)
+        h = self.aggregator(output, att_mask, encounter=False)
 
-        h = self.aggregator(output, h_att_mask, encounter=False)
         return h

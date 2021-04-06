@@ -33,8 +33,6 @@ class SSLMLMBYOL(pl.LightningModule):
         self.target_network = copy.deepcopy(self.online_network)
         self.weight_callback = BYOLMAWeightUpdate()
 
-
-
     def on_train_batch_end(self, outputs, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
         # Add callback for user automatically since it's key to BYOL weight update
         self.weight_callback.on_train_batch_end(self.trainer, self, outputs, batch, batch_idx, dataloader_idx)
@@ -76,13 +74,12 @@ class SSLMLMBYOL(pl.LightningModule):
             y2, z2, h2 = self.target_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=False)
         loss_a = self.cosine_similarity(h1, z2, h_att_mask, bournilli_mask)
 
-        # # Image 2 to image 1 loss
-        # y1, z1, h1 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=False)
-        # with torch.no_grad():
-        #     y2, z2, h2 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=True)
-        # # L2 normalize
-        # loss_b = self.cosine_similarity(h1, z2, h_att_mask, bournilli_mask)
-        loss_b = 0
+        # Image 2 to image 1 loss
+        y1, z1, h1 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=False)
+        with torch.no_grad():
+            y2, z2, h2 = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask, if_mask=True)
+        # L2 normalize
+        loss_b = self.cosine_similarity(h1, z2, h_att_mask, bournilli_mask)
 
         # Final loss
         total_loss = loss_a + loss_b
@@ -93,8 +90,8 @@ class SSLMLMBYOL(pl.LightningModule):
         loss_a, loss_b, total_loss = self.shared_step(batch, batch_idx)
 
         # log results
-        self.log_dict({'1_2_loss': loss_a, 'train_loss': loss_a})
-        self.log_dict({'2_1_loss': loss_a, 'train_loss': loss_b})
+        self.log_dict({'1_2_loss': loss_a})
+        self.log_dict({'2_1_loss': loss_b})
         self.logger.experiment.add_scalar('Loss/Train', total_loss, self.global_step)
 
         return total_loss
@@ -119,9 +116,10 @@ class SSLMLMBYOL(pl.LightningModule):
             ]
 
             optimizer = Bert.optimization.BertAdam(optimizer_grouped_parameters, lr=self.params['optimiser_params']['lr'],
-                                                   warmup=self.params['optimiser_params']['warmup_proportion'])
+                                                   warmup=self.params['optimiser_params']['warmup_proportion'],
+                                                   e=self.params['optimiser_params']['epsilon'])
         elif self.params['optimiser'] == 'SGD':
-            optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'])
+            optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'], momentum=self.params['optimiser_params']['momentum'])
         else:
             raise ValueError('the optimiser is not implimented')
         # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])

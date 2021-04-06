@@ -14,7 +14,7 @@ from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
 from pytorch_lightning.metrics.functional.classification import average_precision, auroc
 from utils.utils import load_obj
-from models.hibehrt import HiBEHRT
+# from models.hibehrt import HiBEHRT
 from torch.optim import *
 from optim.tri_stage_lr_scheduler import TriStageLRScheduler
 
@@ -32,7 +32,26 @@ class EHR2VecFinetune(pl.LightningModule):
 
         self.feature_extractor = HiBEHRT(params)
 
+        self.pooler = BertPooler(params)
+        self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
+
+        self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
+        self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
+        self.f1 = pl.metrics.classification.F1(num_classes=1)
+        self.nll = torch.nn.BCELoss()
+
+        self.sig = nn.Sigmoid()
+
+        self.manual_valid = self.params['manual_valid']
+
+        if self.manual_valid:
+            self.reset_buffer_valid()
+
+        self.apply(self.init_bert_weights)
+
+        # load pretrained weight in the end
         if params['checkpoint_feature'] is not None:
+            print('load pre-trained model')
             pretrained_dict = torch.load(params['checkpoint_feature'], map_location=lambda storage, loc: storage)['state_dict']
             pretrained_dict = {'.'.join(k.split('.')[1:]): v for k,v in pretrained_dict.items() if k.split('.')[0] == 'online_network'}
 
@@ -43,22 +62,6 @@ class EHR2VecFinetune(pl.LightningModule):
             model_dict.update(pretrained_dict)
             # 3. load the new state dict
             self.feature_extractor.load_state_dict(model_dict)
-
-        self.pooler = BertPooler(params)
-        self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
-
-        self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
-        self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
-        self.f1 = pl.metrics.classification.F1(num_classes=1)
-
-        self.sig = nn.Sigmoid()
-
-        self.manual_valid = self.params['manual_valid']
-
-        if self.manual_valid:
-            self.reset_buffer_valid()
-
-        self.apply(self.init_bert_weights)
 
     def init_bert_weights(self, module):
         """ Initialize the weights.
@@ -177,11 +180,13 @@ class EHR2VecFinetune(pl.LightningModule):
 
             auprc_score = average_precision(pred, target=label)
             auroc_score = auroc(pred, label)
+            nll = self.nll(pred, label)
 
-            print('epoch : {} AUROC: {} AUPRC: {}'.format(self.current_epoch,auroc_score, auprc_score ))
+            print('epoch : {} AUROC: {} AUPRC: {} NLL: {}'.format(self.current_epoch,auroc_score, auprc_score, nll))
 
             self.log('average_precision', auprc_score)
             self.log('auroc', auroc_score)
+            self.log('nll', nll)
             self.reset_buffer_valid()
 
     def test_epoch_end(self, outs):
@@ -241,6 +246,7 @@ class HiBEHRT(nn.Module):
         self.embedding = Embedding(params)
         self.extractor = Extractor(params)
         self.aggregator = Aggregator(params)
+        self.params = params
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask, epoch):
 
@@ -253,6 +259,10 @@ class HiBEHRT(nn.Module):
         else:
             output = self.embedding(record, age, seg, position)
             output = self.extractor(output, att_mask, encounter=True)
+
+        timestep_mask = Bernoulli(torch.ones_like(h_att_mask) * self.params['timestep_mask']).sample()
+
+        output = output * timestep_mask.unsqueeze(-1)
 
         h = self.aggregator(output, h_att_mask, encounter=False)
         return h
