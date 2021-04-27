@@ -99,6 +99,7 @@ def EHR2VecDataLoader(params):
             data = data.reset_index(drop=True)
 
         print('data size:', len(data))
+        print('positive sample size', len(data[data['label'] == 1]))
         print('percentage of positive samples:', len(data[data['label'] == 1])/len(data))
 
 
