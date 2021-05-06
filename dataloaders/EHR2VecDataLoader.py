@@ -108,7 +108,7 @@ def EHR2VecDataLoader(params):
             pos = data[data['label'] == 1]
             neg = data[data['label'] == 0]
 
-            num_pos = (len(neg) * params['positive_percent'])/(1 - params['positive_percent'])
+            num_pos = int((len(neg) * params['positive_percent'])/(1 - params['positive_percent']))
             pos = pos.sample(n=num_pos)
 
             data = pd.concat([pos, neg])
