@@ -448,7 +448,7 @@ class EHRAugmentation(object):
         if choice == 'random_mask':
             code = random_mask(code, category=['SEP'], p=0.2)
         elif choice == 'mask_diag_med':
-            code = random_mask(code, category=['TES', 'BMI', 'BPL', 'BPH', 'SMO', 'ALC'], p=0.5)
+            code = random_mask(code, category=['LAB', 'BMI', 'BPL', 'BPH', 'SMO', 'ALC'], p=0.5)
         else:
             code = random_mask(code, category=['DIA', 'MED'], p=0.5)
 

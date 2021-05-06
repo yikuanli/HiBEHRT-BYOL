@@ -104,6 +104,16 @@ def EHR2VecDataLoader(params):
             data = data[data['baseline_age'] < params['age_range']['max_age']]
             data = data.reset_index(drop=True)
 
+        if params['positive_percent'] is not None:
+            pos = data[data['label'] == 1]
+            neg = data[data['label'] == 0]
+
+            num_pos = (len(neg) * params['positive_percent'])/(1 - params['positive_percent'])
+            pos = pos.sample(n=num_pos)
+
+            data = pd.concat([pos, neg])
+            data = data.reset_index(drop=True)
+
         print('data size:', len(data))
         print('positive sample size', len(data[data['label'] == 1]))
         print('percentage of positive samples:', len(data[data['label'] == 1])/len(data))
