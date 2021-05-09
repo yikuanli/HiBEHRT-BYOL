@@ -86,14 +86,32 @@ def BEHRTDataLoader(params):
                 data = data[data[key] > 1]
             data = data.reset_index(drop=True)
 
-        if params['min_len'] is not None:
+        if params['len_range'] is not None:
             data['len'] = data.code.apply(lambda x: len(x))
-            data = data[data['len']>params['min_len']]
+            data = data[data['len'] > params['len_range']['min_len']]
+            data = data[data['len'] < params['len_range']['max_len']]
             data = data.reset_index(drop=True)
 
-        if params['min_year'] is not None:
-            data['duration'] = data.age.apply(lambda x: int(x[-1])-int(x[0]))
-            data = data[data['duration'] > params['min_year']]
+        if params['year_range'] is not None:
+            data['duration'] = data.age.apply(lambda x: int(x[-1]) - int(x[0]))
+            data = data[data['duration'] > params['year_range']['min_year']]
+            data = data[data['duration'] < params['year_range']['max_year']]
+            data = data.reset_index(drop=True)
+
+        if params['age_range'] is not None:
+            data['baseline_age'] = data.age.apply(lambda x: int(x[-1]))
+            data = data[data['baseline_age'] > params['age_range']['min_age']]
+            data = data[data['baseline_age'] < params['age_range']['max_age']]
+            data = data.reset_index(drop=True)
+
+        if params['positive_percent'] is not None:
+            pos = data[data['label'] == 1]
+            neg = data[data['label'] == 0]
+
+            num_pos = int((len(neg) * params['positive_percent']) / (1 - params['positive_percent']))
+            pos = pos.sample(n=num_pos)
+
+            data = pd.concat([pos, neg])
             data = data.reset_index(drop=True)
 
         print('data size:', len(data))
