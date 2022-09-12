@@ -26,7 +26,7 @@ import numpy as np
 # import sys
 
 
-class BEHRT2Vec(pl.LightningModule):
+class MEDBEHRT2Vec(pl.LightningModule):
     def __init__(self, params):
         super().__init__()
         self.params = params
