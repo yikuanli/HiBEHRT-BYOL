@@ -12,7 +12,8 @@ from pl_bolts.callbacks.byol_updates import BYOLMAWeightUpdate
 from typing import Any
 from pl_bolts.optimizers.lars_scheduling import LARSWrapper
 from pl_bolts.optimizers.lr_scheduler import LinearWarmupCosineAnnealingLR
-from pytorch_lightning.metrics.functional.classification import average_precision, auroc
+# from pytorch_lightning.metrics.functional.classification import average_precision, auroc
+from torchmetrics.functional import average_precision, auroc
 from utils.utils import load_obj
 from torch.optim import *
 from optim.tri_stage_lr_scheduler import TriStageLRScheduler
@@ -33,9 +34,9 @@ class BEHRT2Vec(pl.LightningModule):
         self.pooler = BertPooler(params)
         self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
 
-        self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
-        self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
-        self.f1 = pl.metrics.classification.F1(num_classes=1)
+        # self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
+        # self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
+        # self.f1 = pl.metrics.classification.F1(num_classes=1)
         self.nll = torch.nn.BCELoss()
 
         self.sig = nn.Sigmoid()
@@ -98,9 +99,9 @@ class BEHRT2Vec(pl.LightningModule):
         if self.manual_valid:
             self.pred_list.append(self.sig(pred).cpu())
             self.target_list.append(label.cpu())
-        self.valid_prc(self.sig(pred), label)
-        self.valid_recall(self.sig(pred), label)
-        self.f1(self.sig(pred), label)
+        # self.valid_prc(self.sig(pred), label)
+        # self.valid_recall(self.sig(pred), label)
+        # self.f1(self.sig(pred), label)
 
     def test_step(self, batch, batch_idx):
         loss, pred, label = self.shared_step(batch, batch_idx)
@@ -109,8 +110,8 @@ class BEHRT2Vec(pl.LightningModule):
             self.pred_list.append(self.sig(pred).cpu())
             self.target_list.append(label.cpu())
 
-        self.valid_prc(self.sig(pred), label)
-        self.valid_recall(self.sig(pred), label)
+        # self.valid_prc(self.sig(pred), label)
+        # self.valid_recall(self.sig(pred), label)
 
     def configure_optimizers(self):
         # optimizer = eval(self.params['optimiser'])
@@ -151,9 +152,9 @@ class BEHRT2Vec(pl.LightningModule):
 
     def validation_epoch_end(self, outs):
         # log epoch metric
-        self.log('valid_precision', self.valid_prc.compute())
-        self.log('valid_recall', self.valid_recall.compute())
-        self.log('F1_score', self.f1.compute())
+        # self.log('valid_precision', self.valid_prc.compute())
+        # self.log('valid_recall', self.valid_recall.compute())
+        # self.log('F1_score', self.f1.compute())
 
         if self.manual_valid:
             label = torch.cat(self.target_list, dim=0).view(-1)
