@@ -200,8 +200,8 @@ class Extractor(nn.Module):
         seg_len = math.ceil((hidden.size()[1] - self.params['segment_length']) / self.params['move_length']) + 1
         mask = mask[:,:, 0]
 
-        encode_samples = torch.empty((seg_len, hidden.size()[0], self.params['segment_length'], self.params['hidden_size']), device=self.device).float()
-        mask_samples = torch.empty((seg_len, hidden.size()[0], self.params['segment_length']), device=self.device).float()
+        encode_samples = torch.empty((seg_len, hidden.size()[0], self.params['segment_length'], self.params['hidden_size']), device=hidden.device).float()
+        mask_samples = torch.empty((seg_len, hidden.size()[0], self.params['segment_length']), device=mask.device).float()
 
         for i in range(seg_len):
             encode_samples[i] = hidden[:, i * self.params['move_length']:(self.params['segment_length'] + i * self.params['move_length']), :]
