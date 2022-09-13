@@ -192,6 +192,7 @@ class Extractor(nn.Module):
         super(Extractor, self).__init__()
         self.encoder = BertEncoder(params, params['extractor_num_layer'])
         self.pooler = BertPooler(params)
+        self.params = params
 
     def reformat_input(self, mask, hidden):
         # mask [batch, segment, segment_length]
