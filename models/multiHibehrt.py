@@ -206,6 +206,7 @@ class Extractor(nn.Module):
             seg_len = 1
             segment_length = hidden.size()[1]
 
+        print('num_segment {}; length of segment {}'.format(seg_len, segment_length))
 
         mask = mask[:,:, 0]
 
