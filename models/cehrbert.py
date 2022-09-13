@@ -168,8 +168,8 @@ class CEHRBEHRT2Vec(pl.LightningModule):
             label = torch.cat(self.target_list, dim=0).view(-1)
             pred = torch.cat(self.pred_list, dim=0).view(-1)
 
-            auprc_score = average_precision(pred, target=label)
-            auroc_score = auroc(pred, label)
+            auprc_score = average_precision(pred, target=label.type(torch.LongTensor))
+            auroc_score = auroc(pred, label.type(torch.LongTensor))
             nll = self.nll(pred, label)
 
             print('epoch : {} AUROC: {} AUPRC: {} NLL: {}'.format(self.current_epoch, auroc_score, auprc_score, nll))
@@ -183,8 +183,8 @@ class CEHRBEHRT2Vec(pl.LightningModule):
         label = torch.cat(self.target_list, dim=0).view(-1)
         pred = torch.cat(self.pred_list, dim=0).view(-1)
 
-        PRC = average_precision(pred, target=label)
-        ROC = auroc(pred, label)
+        PRC = average_precision(pred, target=label.type(torch.LongTensor))
+        ROC = auroc(pred, label.type(torch.LongTensor))
         nll = self.nll(pred, label)
 
         print('average_precision', PRC)
