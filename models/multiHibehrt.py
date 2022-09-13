@@ -207,7 +207,7 @@ class Extractor(nn.Module):
             encode_samples[i] = hidden[:, i * self.params['move_length']:(self.params['segment_length'] + i * self.params['move_length']), :]
             mask_samples[i] = mask[:, i * self.params['move_length']:(self.params['segment_length'] + i * self.params['move_length'])]
 
-        return encode_samples.transpose(1, 0, 2, 3), mask_samples.transpose(1, 0, 2)
+        return encode_samples.transpose(0, 1), mask_samples.transpose(0, 1)
 
     def forward(self, hidden_state, mask, encounter=True):
         mask = mask.to(dtype=next(self.parameters()).dtype)
