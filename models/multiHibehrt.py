@@ -265,6 +265,6 @@ class HiBEHRT(nn.Module):
     def forward(self, record, age, seg, position, att_mask, h_att_mask):
 
         output = self.embedding(record, age, seg, position)
-        pooled_output, mask = self.extractor1(output, att_mask, encounter=True)
+        pooled_output, mask = self.extractor(output, att_mask, encounter=True)
         h = self.aggregator(pooled_output, mask, encounter=False)
         return h
