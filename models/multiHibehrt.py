@@ -198,7 +198,10 @@ class Extractor(nn.Module):
         # mask [batch, segment, segment_length]
         # hidden [batch, segment, hidden_size]
         seg_len = (math.ceil((hidden.size()[1] - self.params['segment_length']) / self.params['move_length']) + 1)
-        print('segment length ', seg_len)
+
+        if seg_len < 1:
+            seg_len = 1
+
         mask = mask[:,:, 0]
 
         encode_samples = torch.empty((seg_len, hidden.size()[0], self.params['segment_length'], self.params['hidden_size']), device=hidden.device).float()
