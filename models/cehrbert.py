@@ -234,7 +234,7 @@ class Embedding(nn.Module):
         self.posi_embeddings = nn.Embedding(params['max_seq_length'], params['hidden_size']). \
             from_pretrained(embeddings=self._init_posi_embedding(params['max_seq_length'], params['hidden_size']))
 
-        self.transform = nn.Linear(in_features=self.params['hidden_size']*3, out_features=self.params['hidden_size'])
+        self.transform = nn.Linear(in_features=params['hidden_size']*3, out_features=params['hidden_size'])
         self.tanh = nn.Tanh()
 
         self.LayerNorm = Bert.modeling.BertLayerNorm(params['hidden_size'], eps=1e-12)
