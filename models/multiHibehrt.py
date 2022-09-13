@@ -206,7 +206,7 @@ class Extractor(nn.Module):
             seg_len = 1
             segment_length = hidden.size()[1]
 
-        print('hidden size {} ;num_segment {}; length of segment {}'.format(hidden.size()[1], seg_len, segment_length))
+        # print('hidden size {} ;num_segment {}; length of segment {}'.format(hidden.size()[1], seg_len, segment_length))
 
         mask = mask[:,:, 0]
 
@@ -214,8 +214,23 @@ class Extractor(nn.Module):
         mask_samples = torch.empty((seg_len, hidden.size()[0], segment_length), device=mask.device).float()
 
         for i in range(seg_len):
-            encode_samples[i] = hidden[:, i * self.params['move_length']:(segment_length + i * self.params['move_length']), :]
-            mask_samples[i] = mask[:, i * self.params['move_length']:(segment_length + i * self.params['move_length'])]
+            seg_chose = hidden[:, i * self.params['move_length']:(segment_length + i * self.params['move_length']), :]
+            mask_chose = mask[:, i * self.params['move_length']:(segment_length + i * self.params['move_length'])]
+
+            if segment_length + i * self.params['move_length'] > hidden.size()[1]:
+                pad_hidden = torch.zeros((seg_chose.size()[0],
+                                  segment_length + i * self.params['move_length'] - hidden.size()[1],
+                                  seg_chose.size()[2]), device=hidden.device
+                                  ).float()
+                encode_samples[i] = torch.cat([seg_chose, pad_hidden], dim=1)
+
+                pad_mask = torch.zeros((mask_chose.size()[0], segment_length + i * self.params['move_length'] - mask.size()[1]),
+                                       device=mask_chose.device).float()
+                mask_samples[i] = torch.cat([mask_chose, pad_mask], dim=1)
+
+            else:
+                encode_samples[i] = seg_chose
+                mask_samples[i] = mask_chose
 
         return encode_samples.transpose(0, 1), mask_samples.transpose(0, 1)
 
