@@ -229,6 +229,15 @@ class Extractor(nn.Module):
 
         return pooled_hidden, mask, new_hidden, new_mask  # [batch * seg_len * Dim]
 
+class ExtractorEncoder(nn.Module):
+    def __init__(self, params, num_layer):
+        super(ExtractorEncoder, self).__init__()
+        layer = Extractor(params)
+        self.layer = nn.ModuleList([copy.deepcopy(layer) for _ in range(num_layer)])
+    def forward(self, new_hidden, new_mask, encounter=True):
+        for layer_module in self.layer:
+            pooled_hidden, mask, new_hidden, new_mask = layer_module(new_hidden, new_mask, encounter)
+        return pooled_hidden, mask
 
 class Aggregator(nn.Module):
     def __init__(self, params):
@@ -245,18 +254,17 @@ class Aggregator(nn.Module):
         return encoded_layer  # batch seq_len dim
 
 
+
 class HiBEHRT(nn.Module):
     def __init__(self, params):
         super(HiBEHRT, self).__init__()
         self.embedding = Embedding(params)
-        self.extractor1 = Extractor(params)
-        self.extractor2 = Extractor(params)
+        self.extractor = ExtractorEncoder(params, num_layer=self.params['hi_extractor_layer'])
         self.aggregator = Aggregator(params)
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask):
 
         output = self.embedding(record, age, seg, position)
-        pooled_output, mask, hi_output, hi_mask = self.extractor1(output, att_mask, encounter=True)
-        pooled_output, mask, hi_output, hi_mask = self.extractor2(hi_output, hi_mask, encounter=True)
+        pooled_output, mask = self.extractor1(output, att_mask, encounter=True)
         h = self.aggregator(pooled_output, mask, encounter=False)
         return h
