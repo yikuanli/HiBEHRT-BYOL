@@ -259,7 +259,7 @@ class HiBEHRT(nn.Module):
     def __init__(self, params):
         super(HiBEHRT, self).__init__()
         self.embedding = Embedding(params)
-        self.extractor = ExtractorEncoder(params, num_layer=self.params['hi_extractor_layer'])
+        self.extractor = ExtractorEncoder(params, num_layer=params['hi_extractor_layer'])
         self.aggregator = Aggregator(params)
 
     def forward(self, record, age, seg, position, att_mask, h_att_mask):
