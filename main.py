@@ -62,8 +62,8 @@ def main():
     checkpoint_callback = ModelCheckpoint(**callback_params)
     lr_monitor = LearningRateMonitor(logging_interval='step')
 
-    callbacks = [lr_monitor]
-    env_params.update({'checkpoint_callback': checkpoint_callback, 'callbacks': callbacks})
+    callbacks = [lr_monitor, checkpoint_callback]
+    env_params.update({'callbacks': callbacks})
     trainer = pl.Trainer(**env_params)
 
     # train and evaluate model
