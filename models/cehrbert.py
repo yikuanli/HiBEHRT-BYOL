@@ -56,6 +56,20 @@ class CEHRBEHRT2Vec(pl.LightningModule):
 
         self.apply(self.init_bert_weights)
 
+        if 'checkpoint_feature' in params and params['checkpoint_feature'] is not None:
+            pretrained_dict = torch.load(params['checkpoint_feature'],
+                                         map_location=lambda storage, loc: storage)['state_dict']
+            model_dict = self.state_dict()
+
+            non_compatible_keys = [k for k,v in pretrained_dict.items() if k not in model_dict]
+            pretrained_dict = {k: v for k, v in pretrained_dict.items() if k in model_dict}
+
+            model_dict.update(pretrained_dict)
+            # 3. load the new state dict
+            self.load_state_dict(model_dict)
+
+            print(non_compatible_keys)
+
     def init_bert_weights(self, module):
         """ Initialize the weights.
         """

@@ -50,6 +50,8 @@ def main():
     model = eval(base_params['model'])
     model_params = base_params['model_params']
     model_params.update(base_params['dataloader_params'])
+    model_params.update({'checkpoint_feature': args.load_path})
+
     model = model(model_params)
 
     # set up training environment
