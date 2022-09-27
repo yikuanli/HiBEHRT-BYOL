@@ -187,9 +187,7 @@ class MEDBEHRT2Vec(pl.LightningModule):
         ROC = auroc(pred, label.type(torch.LongTensor))
         nll = self.nll(pred, label)
 
-        print('average_precision', PRC)
-        print('auroc', ROC)
-        print('nll', nll)
+        print('AUROC: {} AUPRC: {} NLL: {}'.format(ROC, PRC, nll))
 
         return {'auprc': PRC, 'auroc': ROC, 'nll': nll}
 
