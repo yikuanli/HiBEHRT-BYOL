@@ -344,40 +344,6 @@ class RemoveSEP(object):
 
         return sample
 
-
-# class FormatHierarchicalStructure(object):
-#     def __init__(self, segment_length, move_length, max_seq_length):
-#         self.segment_length = segment_length
-#         self.move_length = move_length
-#         self.max_seq_length = max_seq_length
-#
-#     def __call__(self, sample):
-#         if (self.max_seq_length-self.segment_length) % 50 != 0:
-#             raise ValueError('Need to set up (max seqence length - segment length) % move length == 0')
-#         else:
-#             code = [sample['code'][n*self.move_length:(self.segment_length + n*self.move_length)]
-#                     for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-#             age = [sample['age'][n*self.move_length:(self.segment_length + n*self.move_length)]
-#                    for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-#             seg = [sample['seg'][n*self.move_length:(self.segment_length + n*self.move_length)]
-#                    for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-#             position = [sample['position'][n*self.move_length:(self.segment_length + n*self.move_length)]
-#                         for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-#             att_mask = [sample['att_mask'][n*self.move_length:(self.segment_length + n*self.move_length)]
-#                         for n in range((self.max_seq_length-self.segment_length)//self.move_length + 1)]
-#
-#             mask = np.zeros((self.max_seq_length-self.segment_length)//self.move_length + 1)
-#             if sample['length'] <= self.segment_length:
-#                 num = 1
-#             else:
-#                 num = math.ceil((sample['length']-self.segment_length)/self.move_length) + 1
-#             mask[:num] = np.ones(num)
-#
-#         sample.update({'code': code, 'age': age, 'seg': seg, 'position': position,
-#                        'att_mask': att_mask, 'h_att_mask': mask})
-#
-#         return sample
-
 class FormatHierarchicalStructure(object):
     def __init__(self, segment_length, move_length, max_seq_length):
         self.segment_length = segment_length
@@ -405,20 +371,7 @@ class FormatHierarchicalStructure(object):
             att_mask_list = [att_mask[n * self.move_length:(self.segment_length + n * self.move_length)] for n in
                              range(math.ceil((self.max_seq_length - self.segment_length) / self.move_length) + 1)]
 
-            # mask = np.zeros(math.ceil((self.max_seq_length - self.segment_length) / self.move_length))
-            # if sample['length'] <= self.segment_length:
-            #     num = 1
-            # else:
-            #     num = math.ceil((sample['length'] - self.segment_length) / self.move_length) + 1
-            # mask[:num] = np.ones(num)
             mask = [1. if each[0] != 0 else 0. for each in code_list]
-
-        #             mask = np.zeros(math.ceil(self.max_seq_length-self.segment_length/self.move_length) + 1)
-        #             if sample['length'] <= self.segment_length:
-        #                 num = 1
-        #             else:
-        #                 num = math.ceil((sample['length']-self.segment_length)/self.move_length) + 1
-        #             mask[:num] = np.ones(num)
 
         sample.update({'code': code_list, 'age': age_list, 'seg': seg_list,
                        'position': position_list, 'att_mask': att_mask_list, 'h_att_mask': mask})
