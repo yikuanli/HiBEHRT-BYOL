@@ -74,8 +74,6 @@ class CEHRBEHRT2Vec(pl.LightningModule):
         """ Initialize the weights.
         """
         if isinstance(module, (nn.Linear, nn.Embedding)):
-            # Slightly different from the TF version which uses truncated_normal for initialization
-            # cf https://github.com/pytorch/pytorch/pull/5617
             module.weight.data.normal_(mean=0.0, std=self.params['initializer_range'])
         elif isinstance(module, BertLayerNorm):
             module.bias.data.zero_()

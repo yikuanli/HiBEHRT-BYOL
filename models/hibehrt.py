@@ -33,10 +33,6 @@ class EHR2Vec(pl.LightningModule):
         self.feature_extractor = HiBEHRT(params)
         self.pooler = BertPooler(params)
         self.classifier = nn.Linear(in_features=self.params['hidden_size'], out_features=1)
-
-        # self.valid_prc = pl.metrics.classification.Precision(num_classes=1)
-        # self.valid_recall = pl.metrics.classification.Recall(num_classes=1)
-        # self.f1 = pl.metrics.classification.F1(num_classes=1)
         self.nll = torch.nn.BCELoss()
 
         self.sig = nn.Sigmoid()
@@ -52,8 +48,6 @@ class EHR2Vec(pl.LightningModule):
         """ Initialize the weights.
         """
         if isinstance(module, (nn.Linear, nn.Embedding)):
-            # Slightly different from the TF version which uses truncated_normal for initialization
-            # cf https://github.com/pytorch/pytorch/pull/5617
             module.weight.data.normal_(mean=0.0, std=self.params['initializer_range'])
         elif isinstance(module, BertLayerNorm):
             module.bias.data.zero_()
@@ -99,9 +93,6 @@ class EHR2Vec(pl.LightningModule):
         if self.manual_valid:
             self.pred_list.append(self.sig(pred).cpu())
             self.target_list.append(label.cpu())
-        # self.valid_prc(self.sig(pred), label)
-        # self.valid_recall(self.sig(pred), label)
-        # self.f1(self.sig(pred), label)
 
     def test_step(self, batch, batch_idx):
         loss, pred, label = self.shared_step(batch, batch_idx)
@@ -110,11 +101,7 @@ class EHR2Vec(pl.LightningModule):
             self.pred_list.append(self.sig(pred).cpu())
             self.target_list.append(label.cpu())
 
-        # self.valid_prc(self.sig(pred), label)
-        # self.valid_recall(self.sig(pred), label)
-
     def configure_optimizers(self):
-        # optimizer = eval(self.params['optimiser'])
 
         if self.params['optimiser'] == 'Adam':
             no_decay = ['bias', 'LayerNorm.bias', 'LayerNorm.weight']
@@ -151,10 +138,6 @@ class EHR2Vec(pl.LightningModule):
             return [optimizer], [scheduler]
 
     def validation_epoch_end(self, outs):
-        # log epoch metric
-        # self.log('valid_precision', self.valid_prc.compute())
-        # self.log('valid_recall', self.valid_recall.compute())
-        # self.log('F1_score', self.f1.compute())
 
         if self.manual_valid:
             label = torch.cat(self.target_list, dim=0).view(-1)
@@ -199,12 +182,6 @@ class Extractor(nn.Module):
 
         attention_mast = (1.0 - attention_mast) * -10000.0
 
-        # encode_visit = []
-        # for i in range(hidden_state.size(1)):
-        #     encoded_layer = self.encoder(hidden_state[:, i, :, :], attention_mast[:, i, :], encounter)
-        #     encoded_layer = self.pooler(encoded_layer, encounter)
-        #     encode_visit.append(encoded_layer)
-        # encode_visit = torch.stack(encode_visit, dim=1)
         encoded_layer = self.encoder(hidden_state, attention_mast, encounter)
         encoded_layer = self.pooler(encoded_layer, encounter)
 

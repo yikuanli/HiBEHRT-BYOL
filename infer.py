@@ -58,16 +58,8 @@ def main():
     env_params.update({'logger': logger})
     env_params.update({'default_root_dir': os.path.join(save_path, 'checkpoint')})
 
-    # callback_params.update({'filepath': os.path.join(save_path, 'checkpoint')})
-    # checkpoint_callback = ModelCheckpoint(**callback_params)
-    # lr_monitor = LearningRateMonitor(logging_interval='step')
-
-    # callbacks = [CheckpointEveryNSteps(20), lr_monitor]
-    # env_params.update({'checkpoint_callback': checkpoint_callback, 'callbacks': callbacks})
     trainer = pl.Trainer(**env_params)
 
-    # train and evaluate model
-    # trainer.fit(model, trainloader, evalloader)
     results = trainer.test(model, evalloader, ckpt_path=args.load_path)
     print(results)
 

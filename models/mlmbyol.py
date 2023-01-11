@@ -37,9 +37,6 @@ class SSLMLMBYOL(pl.LightningModule):
         # Add callback for user automatically since it's key to BYOL weight update
         self.weight_callback.on_train_batch_end(self.trainer, self, outputs, batch, batch_idx, dataloader_idx)
 
-    # def on_train_batch_end(self, outputs: Any, batch: Any, batch_idx: int, dataloader_idx: int) -> None:
-    #     self.weight_callback.on_train_batch_end(self.trainer, self, batch, outputs,batch_idx, dataloader_idx)
-
     def forward(self, record, age, seg, position, att_mask, h_att_mask, bournilli_mask=None, if_mask=False):
         y, _, _ = self.online_network(record, age, seg, position, att_mask, h_att_mask, bournilli_mask,  if_mask)
         return y
@@ -99,9 +96,6 @@ class SSLMLMBYOL(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         loss_a, loss_b, total_loss = self.shared_step(batch, batch_idx)
 
-        # log results
-        # self.log_dict({'1_2_loss': loss_a, 'train_loss': total_loss})
-
         return total_loss
 
     def configure_optimizers(self):
@@ -122,12 +116,7 @@ class SSLMLMBYOL(pl.LightningModule):
             optimizer = SGD(self.parameters(), lr=self.params['optimiser_params']['lr'], momentum=self.params['optimiser_params']['momentum'])
         else:
             raise ValueError('the optimiser is not implimented')
-        # optimizer = optimizer(self.parameters(), **self.params['optimiser_params'])
 
-        # scheduler = LinearWarmupCosineAnnealingLR(
-        #     optimizer,
-        #     **self.params['scheduler']
-        # )
         if self.params['lr_strategy'] == 'warmup_cosine':
             scheduler = LinearWarmupCosineAnnealingLR(
                     optimizer,
@@ -152,23 +141,7 @@ class HiBEHRT(nn.Module):
         self.projector = MLP(params)
         self.predictor = MLP(params)
 
-    #     self.apply(self.init_bert_weights)
-    #
-    # def init_bert_weights(self, module):
-    #     """ Initialize the weights.
-    #     """
-    #     if isinstance(module, (nn.Linear, nn.Embedding)):
-    #         # Slightly different from the TF version which uses truncated_normal for initialization
-    #         # cf https://github.com/pytorch/pytorch/pull/5617
-    #         module.weight.data.normal_(mean=0.0, std=0.02)
-    #     elif isinstance(module, BertLayerNorm):
-    #         module.bias.data.zero_()
-    #         module.weight.data.fill_(1.0)
-    #     if isinstance(module, nn.Linear) and module.bias is not None:
-    #         module.bias.data.zero_()
-
     def forward(self, record, age, seg, position, att_mask, h_att_mask, bournilli_mask=None, if_mask=False):
-        # bournilli = Bernoulli(torch.ones_like(h_att_mask) * prob)
 
         output = self.embedding(record, age, seg, position)
         output = self.extractor(output, att_mask, encounter=True)
@@ -202,13 +175,6 @@ class Extractor(nn.Module):
         attention_mast = mask.unsqueeze(2).unsqueeze(3)
 
         attention_mast = (1.0 - attention_mast) * -10000.0
-
-        # encode_visit = []
-        # for i in range(hidden_state.size(1)):
-        #     encoded_layer = self.encoder(hidden_state[:, i, :, :], attention_mast[:, i, :], encounter)
-        #     encoded_layer = self.pooler(encoded_layer, encounter)
-        #     encode_visit.append(encoded_layer)
-        # encode_visit = torch.stack(encode_visit, dim=1)
         encoded_layer = self.encoder(hidden_state, attention_mast, encounter)
         encoded_layer = self.pooler(encoded_layer, encounter)
 

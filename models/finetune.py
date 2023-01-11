@@ -170,10 +170,6 @@ class EHR2VecFinetune(pl.LightningModule):
             return [optimizer], [scheduler]
 
     def validation_epoch_end(self, outs):
-        # log epoch metric
-        # self.log('valid_precision', self.valid_prc.compute())
-        # self.log('valid_recall', self.valid_recall.compute())
-        # self.log('F1_score', self.f1.compute())
 
         if self.manual_valid:
             label = torch.cat(self.target_list, dim=0).view(-1)
@@ -213,12 +209,6 @@ class Extractor(nn.Module):
 
         attention_mast = (1.0 - attention_mast) * -10000.0
 
-        # encode_visit = []
-        # for i in range(hidden_state.size(1)):
-        #     encoded_layer = self.encoder(hidden_state[:, i, :, :], attention_mast[:, i, :], encounter)
-        #     encoded_layer = self.pooler(encoded_layer, encounter)
-        #     encode_visit.append(encoded_layer)
-        # encode_visit = torch.stack(encode_visit, dim=1)
         encoded_layer = self.encoder(hidden_state, attention_mast, encounter)
         encoded_layer = self.pooler(encoded_layer, encounter)
 
